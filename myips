@@ -1,22 +1,32 @@
 #!/bin/bash
-###################################################
+#####################################################################
+# NAME:        myips
 #
-# FILENAME:   myip
-# PURPOSE:    For Mac OS X, this will print the 
-#             time, private IP, and public IP
-#             
-#             If you provide no options, it will
-#             produce these values once and then exit.
+# SYNOPSIS:    myips [-i {interval}]
 #
-#             The "-i" option, followed with an integer
-#             will produce a continuous loop with an
-#             interval equal to the integer argument you
-#             provide.  Example: myips -i 30
+# DESCRIPTION: For Mac OS X, this will print the
+#              time, private IP, and public IP
 #
+#              If you provide no options, it will
+#              produce these values once and then exit.
+#
+#              The "-i" option, followed with an integer
+#              will produce a continuous loop with an
+#              interval equal to the integer argument you
+#              provide.  Example: myips -i 30
+#
+#####################################################################
 # REVISIONS:
 #
-###################################################
+#  2017/09/28  DW  created time, public IP , and Private IP
+#                  functions.
+#
+#####################################################################
 
+
+####################
+#   FUNCTIONS
+####################
 usage() {
     echo "Usage: "
     echo "     no options will display the time, private IP,"
@@ -25,8 +35,28 @@ usage() {
     echo "     -i followed by an integer will loop by that interval."
     echo ""
     exit 0
-        }
+}
 
+
+Time() {
+  t0=$(date "+%T")
+}
+
+
+PublicIP() {
+  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+}
+
+
+PrivateIP() {
+  #PriIP=$(ipconfig getifaddr en0)
+  PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
+}
+
+
+####################
+#   GETOPTS
+####################
 while getopts ":i:" opt; do
     case $opt in 
         i)  INTERVAL="${OPTARG}"
@@ -37,27 +67,33 @@ while getopts ":i:" opt; do
 done
 shift $(($OPTIND - 1))
 
+
+###################
+# RUN ONCE
+###################
 if [ -n "${INTERVAL}" ]; then
   clear
 else
-  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
-  #PriIP=$(ipconfig getifaddr en0)
-  PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
-  TIME=$(date "+%T")
-  printf "Time:\t\t${TIME}\nPrivate IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
+  Time
+  PrivateIP
+  PublicIP
+  printf "Time:\t\t${t0}\nPrivate IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
   exit 0
 fi
 
+
+###################
+# CONTINUOUS LOOP
+###################
 while :;do
   printf "\n   Time\t\t Private IP\t Public IP\n"
   printf "  ===============================================\n"
   COUNTER=0
   while [ $COUNTER -lt 24 ]; do
-      PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
-      #PriIP=$(ipconfig getifaddr en0)
-      PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
-      TIME=$(date "+%T")
-    printf "  $TIME\t$PriIP\t$PubIP\n"
+    Time
+    PrivateIP
+    PublicIP
+    printf "  ${t0}\t${PriIP}\t${PubIP}\n"
     let COUNTER=COUNTER+1
     sleep $INTERVAL
   done
