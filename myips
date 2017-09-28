@@ -18,8 +18,8 @@
 #####################################################################
 # REVISIONS:
 #
-#  2017/09/28  DW  created time, public IP , and Private IP
-#                  functions.
+#  2017/09/28  DW  created func for interface and status
+#  2017/09/28  DW  created func for time, public and private IPs
 #
 #####################################################################
 
