@@ -1,5 +1,7 @@
 exit 0
 
+Here are some getopts examples to help me get the syntax correct.
+
 
 #  Examples
 #  ================
