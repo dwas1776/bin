@@ -96,14 +96,13 @@ fi
 # CONTINUOUS LOOP
 ###################
 while :;do
-  printf "\n   Time\t\t Private IP\t Public IP\n"
-  printf "  ===============================================\n"
+  printf "\n   Time\t\t Public IP\n"
+  printf "  ============================\n"
   COUNTER=0
   while [ $COUNTER -lt 24 ]; do
     Time
-    PrivateIP
     PublicIP
-    printf "  ${t0}\t${PriIP}\t${PubIP}\n"
+    printf "  ${t0}\t${PubIP}\n"
     let COUNTER=COUNTER+1
     sleep $INTERVAL
   done
