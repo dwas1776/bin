@@ -41,7 +41,8 @@ if [ -n "${INTERVAL}" ]; then
   clear
 else
   PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
-  PriIP=$(ipconfig getifaddr en0)
+  #PriIP=$(ipconfig getifaddr en0)
+  PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
   TIME=$(date "+%T")
   printf "Time:\t\t${TIME}\nPrivate IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
   exit 0
