@@ -15,7 +15,7 @@
 #              will produce a continuous loop with an
 #              interval equal to the integer argument you
 #              provide.  Example: myips -i 30
-#              .
+#
 #####################################################################
 # REVISIONS:
 #
