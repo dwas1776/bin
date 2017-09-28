@@ -1,0 +1,55 @@
+#!/bin/bash
+###################################################
+#
+# FILENAME:   myip
+# PURPOSE:    print time, private IP, and public IP
+#             in a continuous loop
+#
+# REVISIONS:
+#
+###################################################
+
+usage() {
+    echo "Usage: "
+    echo "     no options will display the time, private IP,"
+    echo "     public IP and then exit."
+    echo ""
+    echo "     -i followed by an integer will loop by that interval."
+    echo ""
+    exit 0
+        }
+
+while getopts ":i:" opt; do
+    case $opt in 
+        i)  INTERVAL="${OPTARG}"
+            ;;
+        *)  usage
+            ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+if [ -n "${INTERVAL}" ]; then
+  clear
+else
+  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+  PriIP=$(ipconfig getifaddr en0)
+  TIME=$(date "+%T")
+  printf "Time:\t\t${TIME}\nPrivate IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
+  exit 0
+fi
+
+while :;do
+  printf "\n   Time\t\t Private IP\t Public IP\n"
+  printf "  ===============================================\n"
+  COUNTER=0
+  while [ $COUNTER -lt 24 ]; do
+      PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+      #PriIP=$(ipconfig getifaddr en0)
+      PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
+      TIME=$(date "+%T")
+    printf "  $TIME\t$PriIP\t$PubIP\n"
+    let COUNTER=COUNTER+1
+    sleep $INTERVAL
+  done
+done
