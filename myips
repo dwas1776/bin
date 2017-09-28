@@ -42,15 +42,22 @@ Time() {
   t0=$(date "+%T")
 }
 
+Interface() {
+  en=$(netstat -rn | awk '{ if ($1 ~/default/) {print $6}}')
+}
+
+Status() {
+  Interface
+  STAT=$(ifconfig ${en} | awk '{ if ($1 ~/status/) {print $NF}}')
+}
 
 PublicIP() {
   PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
 }
 
-
 PrivateIP() {
-  #PriIP=$(ipconfig getifaddr en0)
-  PriIP=$(ipconfig getifaddr $(netstat -nr | awk '{ if ($1 ~/default/) { print $6} }'))
+  Interface
+  PriIP=$(ipconfig getifaddr ${en})
 }
 
 
@@ -75,9 +82,12 @@ if [ -n "${INTERVAL}" ]; then
   clear
 else
   Time
+  Interface
+  Status
   PrivateIP
   PublicIP
-  printf "Time:\t\t${t0}\nPrivate IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
+  printf "Time:\t\t${t0}\nInterface:\t${en}\nStatus:\t\t${STAT}\n"
+  printf "Private IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
   exit 0
 fi
 
