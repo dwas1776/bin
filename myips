@@ -2,8 +2,16 @@
 ###################################################
 #
 # FILENAME:   myip
-# PURPOSE:    print time, private IP, and public IP
-#             in a continuous loop
+# PURPOSE:    For Mac OS X, this will print the 
+#             time, private IP, and public IP
+#             
+#             If you provide no options, it will
+#             produce these values once and then exit.
+#
+#             The "-i" option, followed with an integer
+#             will produce a continuous loop with an
+#             interval equal to the integer argument you
+#             provide.  Example: myips -i 30
 #
 # REVISIONS:
 #
