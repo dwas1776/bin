@@ -107,14 +107,15 @@ fi
 # CONTINUOUS LOOP
 ###################
 while :;do
-  printf "\n   Time\t\t Public IP\n"
-  printf "  ============================\n"
+  printf "\n\tDate/Time\t\t   Public IP\n"
+  printf "  ==============================================\n"
   COUNTER=0
   while [ $COUNTER -lt 24 ]; do
     Time
     PublicIP
-    printf "  ${t0}\t${PubIP}\n"
+    printf "  ${t0}\t\t${PubIP}\n"
     let COUNTER=COUNTER+1
     sleep $INTERVAL
+    cat /dev/null > ${LOGFILE}
   done
 done
