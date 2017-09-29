@@ -26,6 +26,13 @@
 
 
 ####################
+#   VARIABLES
+####################
+LOGFILE=/tmp/myips.out
+MODIFIED="$(stat -f "%Sm" $LOGFILE)"
+
+
+####################
 #   FUNCTIONS
 ####################
 usage() {
@@ -40,7 +47,7 @@ usage() {
 
 
 Time() {
-  t0=$(date "+%T")
+  t0=$(date "+%b %d %H:%M:%S %Y")
 }
 
 Interface() {
@@ -53,7 +60,7 @@ Status() {
 }
 
 PublicIP() {
-  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com | tee -a "${LOGFILE}")
 }
 
 PrivateIP() {
@@ -87,8 +94,11 @@ else
   Status
   PrivateIP
   PublicIP
-  printf "Time:\t\t${t0}\nInterface:\t${en}\nStatus:\t\t${STAT}\n"
-  printf "Private IP:\t${PriIP}\nPublic IP:\t${PubIP}\n"
+  printf "Command last run:\t${MODIFIED}\n"
+  printf "Public IP was:\t\t$(cat $LOGFILE)\n\n"
+  printf "Time:\t\t\t${t0}\nInterface:\t\t${en}\nStatus:\t\t\t${STAT}\n"
+  printf "Private IP:\t\t${PriIP}\nPublic IP:\t\t${PubIP}\n"
+  cat /dev/null > $LOGFILE
   exit 0
 fi
 
