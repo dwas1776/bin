@@ -1,0 +1,45 @@
+*useIconBox:                    true
+*iconImageMaximum:              48x48
+*iconbox.nscroll bars:          false
+*fadeNormalIcon:                true
+*iconbox*clientDecoration:      resizeh
+
+dtterm*saveLines:               3000
+dtterm*foreground:              grey10
+dtterm*background:              gainsboro
+! dtterm*geometry:              95x25
+dtterm*Title:                   "$(hostname)"
+dtterm*matteWidth:              8
+*menuBar:                       false
+
+XTerm*saveLines:        3000
+XTerm*scrollBar:        true
+XTerm*scrollPosition:   right
+XTerm*cursorColor:      blue
+XTerm*foreground:       black
+XTerm*backgroud:                white
+XTerm*Title:                    "X T E R M"
+*XTerm*font:                    fixed-*-*-*-*-*-*-*-*-*-*-*-*
+
+aixterm*scrollBar:              true
+aixterm*scrollPosition:         right
+aixterm*Title:                  "A I X T E R M"
+
+*xclipboard*.clientDecoration:  resizeh
+*xclipboard*.matteWidth:        6
+*xclipboard*geometry:           450x140+5+805
+*xclipboard*font:               fixed-*-*-*-*-*-*-*-*-*-*-*-*
+*xclipboard*foreground:         black
+*xclipboard*background:         white
+
+*xedit*geometry:                1125x600+125+50
+*xedit*foreground:              black
+*xedit*background:              white
+Dtwm*cursorColor:      		green
+Dtwm*XTerm*iconImage:           /usr/dt/app-defaults/C/term
+Dtwm*XTerm*iconImageBackground: dark slate gray
+Dtwm*XTerm*iconImageForeground: light grey
+Dtpad*fontList:                 fixed-*-*-*-*-*-*-*-*-*-*-*-*
+Dtpad*font:                     fixed-*-*-*-*-*-*-*-*-*-*-*-*
+
+

@@ -1,0 +1,27 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	fspigs
+#   DATE:	May 11, 1999
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:
+#
+#   Syntax:
+#
+#   Revised:
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+
+if [ -z "$1" ]; then
+   print "Please specify filesystem as argument."
+   exit 0
+else
+   FS=$1
+fi
+
+find $1 -xdev -ls | sort -nk7 | grep -v "/dev/"
+
+############################################
+# END OF fspigs
+############################################
