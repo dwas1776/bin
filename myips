@@ -1,12 +1,14 @@
 #!/bin/bash
 #####################################################################
-# NAME:        myips
+# NAME
+#    myips
 #
-# SYNOPSIS:    myips [-i {interval}]
+# SYNOPSIS
+#    myips [-i {interval}]
 #
-# DESCRIPTION: For Mac OS X, this will print the
-#              time, primary interface, status of the
-#              interface, private IP, and public IP
+# DESCRIPTION
+#    For Mac OS X, this will print the time, primary interface, 
+#    status of the interface, private IP, and public IP
 #
 #              If you provide no options, it will
 #              produce these values once and then exit.
@@ -18,25 +20,19 @@
 #
 #####################################################################
 # REVISIONS:
-#
 #  2017/09/28  DW  added LASTIP and MODIFIED
 #  2017/09/28  DW  created func for interface and status
 #  2017/09/28  DW  created func for time, public and private IPs
 #
 #####################################################################
 
-
-####################
-#   VARIABLES
-####################
+# VARIABLES
 LOGFILE=/tmp/myips.out
 LASTIP="$(cat $LOGFILE)"
 MODIFIED="$(stat -f "%Sm" $LOGFILE)"
 cat /dev/null > $LOGFILE
 
-####################
-#   FUNCTIONS
-####################
+# FUNCTIONS
 usage() {
     echo "Usage: "
     echo "     no options will display the time, private IP,"
@@ -46,7 +42,6 @@ usage() {
     echo ""
     exit 0
 }
-
 
 Time() {
   t0=$(date "+%b %d %H:%M:%S %Y")
@@ -70,10 +65,7 @@ PrivateIP() {
   PriIP=$(ipconfig getifaddr ${en})
 }
 
-
-####################
 #   GETOPTS
-####################
 while getopts ":i:" opt; do
     case $opt in 
         i)  INTERVAL="${OPTARG}"
@@ -84,10 +76,7 @@ while getopts ":i:" opt; do
 done
 shift $(($OPTIND - 1))
 
-
-###################
 # RUN ONCE
-###################
 if [ -n "${INTERVAL}" ]; then
   clear
 else
@@ -104,10 +93,7 @@ else
   exit 0
 fi
 
-
-###################
 # CONTINUOUS LOOP
-###################
 while :;do
   printf "\n\tDate/Time\t\t   Public IP\n"
   printf "  ==============================================\n"
@@ -121,3 +107,5 @@ while :;do
     cat /dev/null > ${LOGFILE}
   done
 done
+
+# END
