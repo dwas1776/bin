@@ -1,0 +1,43 @@
+# Interactive?
+case $- in
+	*i*) ;;
+	*) return;;
+esac
+
+set -o vi
+EDITOR=/usr/bin/vi
+export EDITOR
+
+# add timestamp to history
+HISTTIMEFORMAT="%Y%m%d %T "
+HISTSIZE=50000
+HISTFILESIZE=256000
+# append to history file
+shopt -s histappend
+
+# git window dressing
+GIT_PS1_SHOWUPSTREAM="auto"
+GIT_PS1_SHOWCOLORHINTS="yes"
+GIT_PS1_SHOWDIRTYSTATE=true
+source /usr/local/.git-prompt.sh
+#PROMPT_COMMAND='__git_ps1 "\u@\h:\W" "\\\$  "'
+#PROMPT_COMMAND='__git_ps1 "\[\e[1;31;40m\]\u \[\e[0m\]@\h:\W" "\\\$  "'
+PROMPT_COMMAND='__git_ps1 "\[\e[32;40m\]\u@\h:$PWD" " $ \[\e[0m\]"'
+
+# After each command, append to the history file and reread it
+export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+
+# ALIASES
+alias py='/usr/local/bin/python3'
+alias git='/usr/local/bin/git'
+alias vi='/usr/local/bin/vim'
+
+
+vman() {
+    vim -c "SuperMan $*"
+
+    if [ "$?" != "0" ]; then
+        echo "No manual entry for $*"
+    fi
+}
+
