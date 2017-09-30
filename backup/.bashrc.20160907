@@ -1,0 +1,23 @@
+# Interactive?
+case $- in
+	*i*) ;;
+	*) return;;
+esac
+
+set -o vi
+
+# add timestamp to history
+HISTTIMEFORMAT="%Y%m%d %T "
+
+HISTSIZE=50000
+HISTFILESIZE=256000
+
+# append to history file
+shopt -s histappend
+
+# After each command, append to the history file and reread it
+export PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+
+
+alias py='/usr/bin/python3'
+
