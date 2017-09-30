@@ -1,19 +1,19 @@
 #!/bin/ksh
 #########|#########|#########|#########|#########|#########|#########|#########|
+# NAME:
+#    adate
 #
-#   FILENAME:		adate
-#   DATE:		Mar. 1, 2002
-#   AUTHOR:		David A. Wasmer
-#   PURPOSE:		prints the date n days in the future
-# 			Input: adate n (e.g. adate 5)
-# 			Output Form: Month Day Year
+# SYNOPSIS
+#    Input: adate n (e.g. adate 5)
 #
-#   SYNTAX:		Input: adate n (e.g. adate 5)
+# Descripton
+#    prints the date n days in the future
+# 	    Input: adate n (e.g. adate 5)
+# 	    Output Form: Month Day Year
 #
-#   RELATED FILES:
-#
-#   REVISIONS:
-#
+#########|#########|#########|#########|#########|#########|#########|#########|
+# REVISIONS:
+#   20020301  DW  creation date
 #
 #########|#########|#########|#########|#########|#########|#########|#########|
 # set -x
@@ -117,8 +117,4 @@ esac
 
 print $MONTH $day, $year
 
-
-
-############################################
-# END OF adate
-############################################
+# END

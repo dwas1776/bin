@@ -1,19 +1,18 @@
 #!/bin/ksh
 #########|#########|#########|#########|#########|#########|#########|#########|
+# NAME
+#    sdate
 #
-#   FILENAME:           sdate
-#   DATE:               Mar. 1, 2002
-#   AUTHOR:             David A. Wasmer
-#   PURPOSE:            prints the date "n" days ago, where n is the argument.
+# SYNOPSIS
+#    Input: sdate n (e.g. sdate 5)
+#    Output Form: Month Day Year
 #
-#   SYNTAX:
-# 			Input: sdate n (e.g. sdate 5)
-# 			Output Form: Month Day Year
+# Description
+#    prints the date "n" days ago, where n is the argument.
 #
-#   RELATED FILES:
-#
-#   REVISIONS:
-#
+#########|#########|#########|#########|#########|#########|#########|#########|
+# REVISIONS
+#    20020301  DW  creation date
 #
 #########|#########|#########|#########|#########|#########|#########|#########|
 #set -x
@@ -107,6 +106,4 @@ esac
 
 print $MONTH $day, $year
 
-########################
-#  END OF sdate
-########################
+# END
