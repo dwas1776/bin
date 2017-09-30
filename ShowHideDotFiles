@@ -1,11 +1,11 @@
 #!/bin/bash
 #####################################################################
 # NAME:
-#   ShowHiddenFiles -- Finder: show/hide dot files
+#   ShowHideDotFiles -- Finder: show/hide dot files
 #
 # SYNOPSIS:
-#   ShowHiddenFiles -y
-#   ShowHiddenFiles -n
+#   ShowHideDotFiles -y
+#   ShowHideDotFiles -n
 #
 # DESCRIPTION:
 #   For Mac OS X, change the Finder to show or hide dot files.
@@ -20,7 +20,7 @@ ACTION=0
 usage() {
     echo "Usage:"
     echo ""
-    echo "  ShowHiddenFiles [yn]"
+    echo "  ShowHideDotFiles [yn]"
     echo "     -y  show dot files in the Finder"
     echo "     -n  hide dot files in the Finder"
     echo ""
