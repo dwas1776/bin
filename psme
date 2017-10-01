@@ -1,0 +1,21 @@
+#!/bin/ksh
+#set -x
+#########|#########|#########|#########|#########|#########|#########|#########|
+#   FILENAME:	psme
+#   DATE:	Aug 13, 1999
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE: list my processes
+#   Syntax:
+#
+#   Revisions:
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+
+tput rev
+tput dim
+print "     UID   PID  PPID   C    STIME    TTY  TIME CMD                    "
+tput sgr0
+ps -ef|grep $LOGNAME | egrep -v "grep|ps -ef"
+
+# END
