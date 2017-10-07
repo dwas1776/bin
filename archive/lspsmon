@@ -1,0 +1,32 @@
+#!/bin/ksh 
+# set -x
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	lspsmon
+#   DATE:	Feb 23, 2000
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:	Capture system stats
+#
+#   Syntax:	
+#
+#   Revised:	
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+SCRPTID="$(basename ${0})"
+STDOUTFIL="$HOME/data/mon_logs/$SCRPTID.$(date +%m$d).log"
+TIME="$(date +%T)"
+
+if [ ! -d $(dirname $STDOUTFIL) ]; then
+   mkdir -p $(dirname $STDOUTFIL)
+fi
+
+if [ ! -f $STDOUTFIL ]; then
+   {  print  "          $SCRPTID   report"
+      print "         $(date)\n\n\nTime    Page Space  Physical Volume   Volume Group    Size   %Used  Active  Auto  Type\n"
+   }  >  $STDOUTFIL
+fi
+
+lsps -a | grep -v Active | sed  "s/^/${TIME}   /g"  >> $STDOUTFIL
+
+# END

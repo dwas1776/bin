@@ -1,0 +1,23 @@
+REV=$(tput rev)
+NORMAL=$(tput sgr0)
+
+
+print "\n${REV}EPROM should be 0950          ${NORMAL}\c"
+lscfg -vl ioplanar0 | awk '/(RM)/ {print substr($3,1,4)}'
+print "\n${REV}ncs                           ${NORMAL}\c"
+lssrc -g ncs
+print "\n${REV}netlsd                        ${NORMAL}\c"
+ps -ef      | grep [n]etlsd
+print "\n${REV}srule                         ${NORMAL}\c"
+ps -ef      | grep [s]rule
+print "\n${REV}timed                         ${NORMAL}\c"
+ps -ef      | grep [c]ommon/etc/bin/catia_timed
+print "\n${REV}broad                         ${NORMAL}\c"
+ps -ef      | grep [b]road
+print "\n${REV}proserver                     ${NORMAL}\c"
+ps -ef      | grep [p]roserver
+print "\n${REV}yppasswd                      ${NORMAL}\c"
+lssrc -g yp | grep [y]ppasswdd
+print "\n${REV}ls_tv                         ${NORMAL}\c"
+/usr/lib/netls/bin/ls_tv -i
+

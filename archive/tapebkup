@@ -1,0 +1,7 @@
+#!/bin/ksh
+if [ "$(hostname)" = rssrv06 ]; then
+   tar -cvf /dev/rmt0 /catia/prod /doc /home/catdb /maint /plpp /user_files
+elif [ "$(hostname)" = rssrv07 ]; then
+   tar -cvf /dev/rmt0 /cache_nav4d /comm_files /common /ds /files /gdeb /home/catstat \
+                   /usr417r2/catadm /usr417r2/catia /usr419r1/catadm /usr419r1/catia
+fi

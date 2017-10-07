@@ -1,0 +1,1284 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	qc
+#   DATE:	Oct. 29, 1998
+#   AUTHOR:	David A. Wasmer
+#   SYNTAX:	qc [ p e  s h ]
+#			p ) PAGE_IT
+#			e ) EMAIL_IT
+#			s ) SERVERS_ALIVE
+#			h ) FUNC_HELP
+#
+#   PURPOSE:	Checks the following:
+#		    Phase 1 :  check servers alive and uptime
+#		    Phase 2 :  check proccesses
+#   REVISIONS:  
+#
+#     06/15/00 - LKA - Beefed it up so all checking is done by the qc script.
+#     06/28/00 - LHS - Changed test for ADSM running so both server and client
+#                       processes are checked for.
+#     07/24/00 - LKA - Added in checks for CAEN license server and sendmail
+#     09/25/00 - jhw - major changes made for email and pager notification
+#     10/17/00 - LHS - Changed count of NES process on essf1n3 from 5 to 6.  Jake
+#                       added a new instance.
+#     10/18/00 - LHS - Removed dummynode stanzas, added unixadmin_pager as page-out
+#                       destination and set unixadmin as sole email recipient
+#     10/18/00 - LHS - Added checks for Abaqus LM, Fieldview LM, Ioffice LM, Matlab LM
+#                       Maya LM, SAmba NMB, Samba SMB, and CA-TNG
+#     11/02/00 - LHS - Added checks for Orbix, timed, broadcastd, server_queue_monitor
+#     11/06/00 - LHS - Fixed check for server_queue_monitor to look for exact process 
+#                       name match.  (excludes server_queue_monitor_launch)
+#     11/09/00 - LHS - Added check for INND
+#     12/05/00 - LHS - Added check for ns-cron for Netscape
+#     12/08/00 - LHS - Added check for runaway number of dt processes.  This hangs CWS display.
+#     03/19/01 - LHS - Added check for STP
+#     04/07/01 - LHS - Moved all checks for essf1n9 to essf1n7 as part of
+#                       node consolidation
+#     07/26/01 - PS  - Changed the number of processes allowed to be checked for netscape on node3  
+#                      from 8 to 7. Enternal web server is not in production yet.    
+#     08/10/01 - LKA - Added check for essf1n13 EB web servers - admin,ebweb, and ebwebssl
+#     09/14/01 - LKA - Changed the number of processes allowed to be checked for netscape on node11
+#                      from 7 to 6.  VIR stage testing through 9/23 will be taking down this
+#                      netscape instance often.
+#     11/01/01 - JLF - Changed the netscape directory structure for essf1n3
+#     01/08/02 - LHS - Added logic for ATICTS 2000
+#     02/18/02 - PS  - Changed server_queue_monitor; -eg 1 to ge 1
+#     05/14/02 - PS  - DB2 Admin added a second db2wdog process for essf1n7,changed $DB2num; -eg 1 to ge 2
+#     07/11/02 - LHS  - Fixed DB2 count for essf1n11 and added unixadmin_pager for DB2 pages
+#     07/15/02 - PS  - Undid the change that Leon Skillings made on 07/11/02 for DB2 count
+#                      db2wdog count for node 11 should be 3
+#                      one for db2ins61, one for db2pcv52, one for db2adm52
+#     07/17/02 - LHS  - Added check for elcadd NFS filesystem mounts that have been dropping
+#     08/07/02 - DAW - modified Weblogic per Jim Sarmento.
+#		     - modifed Netscape and ns-run check per Joe Paul.
+#     08/20/02 - LHS - removed Abaqus_LM test since it was de-installed
+#     12/12/02 - JLF - Added node 11 monitoring of weblogic
+#     02/10/03 - LHS - Changed call to qc.sna to pass same argument as master qc script received
+#     02/10/03 - LHS - Changed references to Netscape Enterprise Server to instead say iPlanet Web Server
+#     03/04/03 - DAW - Deleted all iostat references
+#     03/19/03 - JLF - Removed essf1n3 from the MQ monitoring Inter diff after upgrade.  Frank Torchia advised
+#     04/14/03 - LHS - Added essf1n7 to test for /ebdesktop/prod/elcadd/spool mount
+#     04/23/03 - JLF - Uncommented out weblogic and removed dev from testing (This is temp)
+#     05/14/03 - JLF - Removed stage from testing of Weblogic (This is temp) JP requested, they are coming up with a 
+#		       different test for the three nodes.
+#     05/15/03 - JLF - Removed INND checks. Ralph removed this from node 13.
+#     05/18/03 - JLF - Removed prod from testing of Weblogic (This is temp) JP requested, they are coming up with a 
+#		       different test for the three nodes.
+#     05/20/03 - lhs - Installed new test for Weblogic App Server.  This is now contained in a subordinate script. Also
+#                      added stanza for new weblogic Servlet Server process and cleaned out old Weblogic stanza.
+#     05/21/03 - JLF - Changed paging and email of DB2 issues from unixadmin to db2_admin	
+#     06/22/03 - JLF - Modified db2 watchdog count due to db2 upgrade.
+#     07-02-03 - DAW - added node 7 to samba check
+#     09-07-03 - LHS - Commented out all LDAP checks.  This has moved to a GDCORP server.  
+#                       Leaving comments for a week or so just in case we need this back.
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+
+
+
+
+
+
+###############################################################################
+#
+#   HELP   FUNCTION
+#
+###############################################################################
+
+function FUNC_HELP
+{
+   print "
+	${REV}USAGE:                                                               $NORM
+
+	/usr/loca/bin/qc [ -h ][ -e ][ -p ][ -s ]
+
+                -p   Pages admin
+                -e
+                -s   Checks servers uptime, 6098's alive and mvs alive
+                -h   Help - displays options for this command
+
+        DEFAULT:  check servers uptime and processes
+
+"
+exit 0
+}
+
+
+
+###############################################################################
+#
+#   ALERT   FUNCTION  
+#
+###############################################################################
+
+function FUNC_ALERT 
+{
+   # default to email even when paging   
+   print "\n entering function for ALERT"
+   TIME=$(date)
+
+   if [[ -n $SRV_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $SRV_MSG $SRV_DN" | mail -s "$SRV_MSG" "$SRV_ALERT_E"
+   elif [[ -n $SRV_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SRV_MSG $SRV_DN" | mail -s "$SRV_MSG" "$SRV_ALERT_E"
+      print "$TIME $SRV_MSG $SRV_DN" | mail "$SRV_ALERT_P"
+   fi
+
+   if [[ -n $DB2JAVA_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $DB2JAVA_MSG $DB2JAVA_DN" | mail -s "$DB2JAVA_MSG" "$DB2JAVA_ALERT_E"
+   elif [[ -n $DB2JAVA_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $DB2JAVA_MSG $DB2JAVA_DN" | mail -s "$DB2JAVA_MSG" "$DB2JAVA_ALERT_E"
+      print "$TIME $DB2JAVA_MSG $DB2JAVA_DN" | mail "$DB2JAVA_ALERT_P"
+   fi
+
+   if [[ -n $DB2_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $DB2_MSG $DB2_DN" | mail -s "$DB2_MSG" "$DB2_ALERT_E"
+   elif [[ -n $DB2_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $DB2_MSG $DB2_DN" | mail -s "$DB2_MSG" "$DB2_ALERT_E"
+      print "$TIME $DB2_MSG $DB2_DN" | mail "$DB2_ALERT_P"
+   fi
+
+   if [[ -n $ORACLE_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $ORACLE_MSG $ORACLE_DN" | mail -s "$ORACLE_MSG" "$ORACLE_ALERT_E"
+   elif [[ -n $ORACLE_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $ORACLE_MSG $ORACLE_DN" | mail -s "$ORACLE_MSG" "$ORACLE_ALERT_E"
+      print "$TIME $ORACLE_MSG $ORACLE_DN" | mail "$ORACLE_ALERT_P"
+   fi
+
+   if [[ -n $MQ_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $MQ_MSG $MQ_DN" | mail -s "$MQ_MSG" "$MQ_ALERT_E"
+   elif [[ -n $MQ_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $MQ_MSG $MQ_DN" | mail -s "$MQ_MSG" "$MQ_ALERT_E"
+      print "$TIME $MQ_MSG $MQ_DN" | mail "$MQ_ALERT_P"
+   fi
+
+   if [[ -n $SNDMAIL_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $SNDMAIL_MSG $SNDMAIL_DN" | mail -s "$SNDMAIL_MSG" "$SNDMAIL_ALERT_E"
+   elif [[ -n $SNDMAIL_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SNDMAIL_MSG $SNDMAIL_DN" | mail -s "$SNDMAIL_MSG" "$SNDMAIL_ALERT_E"
+      print "$TIME $SNDMAIL_MSG $SNDMAIL_DN" | mail "$SNDMAIL_ALERT_P"
+   fi
+
+   if [[ -n $IOFFICE_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $IOFFICE_LM_MSG $IOFFICE_LM_DN" | mail -s "$IOFFICE_LM_MSG" "$IOFFICE_LM_ALERT_E"
+   elif [[ -n $IOFFICE_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $IOFFICE_LM_MSG $IOFFICE_LM_DN" | mail -s "$IOFFICE_LM_MSG" "$IOFFICE_LM_ALERT_E"
+      print "$TIME $IOFFICE_LM_MSG $IOFFICE_LM_DN" | mail "$IOFFICE_LM_ALERT_P"
+   fi
+ 
+   if [[ -n $FV_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $FV_LM_MSG $FV_LM_DN" | mail -s "$FV_LM_MSG" "$FV_LM_ALERT_E"
+   elif [[ -n $FV_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $FV_LM_MSG $FV_LM_DN" | mail -s "$FV_LM_MSG" "$FV_LM_ALERT_E"
+      print "$TIME $FV_LM_MSG $FV_LM_DN" | mail "$FV_LM_ALERT_P"
+   fi
+
+   if [[ -n $INTLF_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $INTLF_LM_MSG $INTLF_LM_DN" | mail -s "$INTLF_LM_MSG" "$INTLF_LM_ALERT_E"
+   elif [[ -n $INTLF_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $INTLF_LM_MSG $INTLF_LM_DN" | mail -s "$INTLF_LM_MSG" "$INTLF_LM_ALERT_E"
+      print "$TIME $INTLF_LM_MSG $INTLF_LM_DN" | mail "$INTLF_LM_ALERT_P"
+   fi
+
+   if [[ -n $MATLAB_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $MATLAB_LM_MSG $MATLAB_LM_DN" | mail -s "$MATLAB_LM_MSG" "$MATLAB_LM_ALERT_E"
+   elif [[ -n $MATLAB_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $MATLAB_LM_MSG $MATLAB_LM_DN" | mail -s "$MATLAB_LM_MSG" "$MATLAB_LM_ALERT_E"
+      print "$TIME $MATLAB_LM_MSG $MATLAB_LM_DN" | mail "$MATLAB_LM_ALERT_P"
+   fi
+
+   if [[ -n $MAYA_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $MAYA_LM_MSG $MAYA_LM_DN" | mail -s "$MAYA_LM_MSG" "$MAYA_LM_ALERT_E"
+   elif [[ -n $MAYA_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $MAYA_LM_MSG $MAYA_LM_DN" | mail -s "$MAYA_LM_MSG" "$MAYA_LM_ALERT_E"
+      print "$TIME $MAYA_LM_MSG $MAYA_LM_DN" | mail "$MAYA_LM_ALERT_P"
+   fi
+
+   if [[ -n $LDAP_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $LDAP_MSG $LDAP_DN" | mail -s "$LDAP_MSG" "$LDAP_ALERT_E"
+   elif [[ -n $LDAP_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $LDAP_MSG $LDAP_DN" | mail -s "$LDAP_MSG" "$LDAP_ALERT_E"
+      print "$TIME $LDAP_MSG $LDAP_DN" | mail "$LDAP_ALERT_P"
+   fi
+
+   if [[ -n $NES_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $NES_MSG $NES_DN" | mail -s "$NES_MSG" "$NES_ALERT_E"
+   elif [[ -n $NES_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $NES_MSG $NES_DN" | mail -s "$NES_MSG" "$NES_ALERT_E"
+      print "$TIME $NES_MSG $NES_DN" | mail "$NES_ALERT_P"
+   fi
+
+   if [[ -n $NS_CRON_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $NS_CRON_MSG $NS_CRON_DN" | mail -s "$NS_CRON_MSG" "$NS_CRON_ALERT_E"
+   elif [[ -n $NS_CRON_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $NS_CRON_MSG $NS_CRON_DN" | mail -s "$NS_CRON_MSG" "$NS_CRON_ALERT_E"
+      print "$TIME $NS_CRON_MSG $NS_CRON_DN" | mail "$NS_CRON_ALERT_P"
+   fi
+   
+   if [[ -n $SNA_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $SNA_MSG $SNA_DN" | mail -s "$SNA_MSG" "$SNA_ALERT_E"
+   elif [[ -n $SNA_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SNA_MSG $SNA_DN" | mail -s "$SNA_MSG" "$SNA_ALERT_E"
+      print "$TIME $SNA_MSG $SNA_DN" | mail "$SNA_ALERT_P"
+   fi
+   
+   if [[ -n $ADSM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $ADSM_MSG $ADSM_DN" | mail -s "$ADSM_MSG" "$ADSM_ALERT_E"
+   elif [[ -n $ADSM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $ADSM_MSG $ADSM_DN" | mail -s "$ADSM_MSG" "$ADSM_ALERT_E"
+      print "$TIME $ADSM_MSG $ADSM_DN" | mail "$ADSM_ALERT_P"
+   fi
+   
+   if [[ -n $SAMBA_NMB_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $SAMBA_NMB_MSG $SAMBA_NMB_DN" | mail -s "$SAMBA_NMB_MSG" "$SAMBA_NMB_ALERT_E"
+   elif [[ -n $SAMBA_NMB_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SAMBA_NMB_MSG $SAMBA_NMB_DN" | mail -s "$SAMBA_NMB_MSG" "$SAMBA_NMB_ALERT_E"
+      print "$TIME $SAMBA_NMB_MSG $SAMBA_NMB_DN" | mail "$SAMBA_NMB_ALERT_P"
+   fi
+   
+   if [[ -n $SAMBA_SMB_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $SAMBA_SMB_MSG $SAMBA_SMB_DN" | mail -s "$SAMBA_SMB_MSG" "$SAMBA_SMB_ALERT_E"
+   elif [[ -n $SAMBA_SMB_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SAMBA_SMB_MSG $SAMBA_SMB_DN" | mail -s "$SAMBA_SMB_MSG" "$SAMBA_SMB_ALERT_E"
+      print "$TIME $SAMBA_SMB_MSG $SAMBA_SMB_DN" | mail "$SAMBA_SMB_ALERT_P"
+   fi
+   
+   if [[ -n $CATNG_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $CATNG_MSG $CATNG_DN" | mail -s "$CATNG_MSG" "$CATNG_ALERT_E"
+   elif [[ -n $CATNG_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $CATNG_MSG $CATNG_DN" | mail -s "$CATNG_MSG" "$CATNG_ALERT_E"
+      print "$TIME $CATNG_MSG $CATNG_DN" | mail "$CATNG_ALERT_P"
+   fi
+   
+  # if [[ -n $ORBIX_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+  #    print "$TIME $ORBIX_MSG $ORBIX_DN" | mail -s "$ORBIX_MSG" "$ORBIX_ALERT_E"
+  # elif [[ -n $ORBIX_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+  #    print "$TIME $ORBIX_MSG $ORBIX_DN" | mail -s "$ORBIX_MSG" "$ORBIX_ALERT_E"
+  #    print "$TIME $ORBIX_MSG $ORBIX_DN" | mail "$ORBIX_ALERT_P"
+  # fi
+   
+   if [[ -n $TIMED_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $TIMED_MSG $TIMED_DN" | mail -s "$TIMED_MSG" "$TIMED_ALERT_E"
+   elif [[ -n $TIMED_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $TIMED_MSG $TIMED_DN" | mail -s "$TIMED_MSG" "$TIMED_ALERT_E"
+      print "$TIME $TIMED_MSG $TIMED_DN" | mail "$TIMED_ALERT_P"
+   fi
+   
+   if [[ -n $BROADCASTD_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $BROADCASTD_MSG $BROADCASTD_DN" | mail -s "$BROADCASTD_MSG" "$BROADCASTD_ALERT_E"
+   elif [[ -n $BROADCASTD_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $BROADCASTD_MSG $BROADCASTD_DN" | mail -s "$BROADCASTD_MSG" "$BROADCASTD_ALERT_E"
+      print "$TIME $BROADCASTD_MSG $BROADCASTD_DN" | mail "$BROADCASTD_ALERT_P"
+   fi
+   
+   if [[ -n $SERVER_QUEUE_MONITOR_DN ]] &&  [[ -n $EMAIL_IT ]] ; then 
+      print "$TIME $SERVER_QUEUE_MONITOR_MSG $SERVER_QUEUE_MONITOR_DN" \
+            | mail -s "$SERVER_QUEUE_MONITOR_MSG" "$SERVER_QUEUE_MONITOR_ALERT_E"
+   elif [[ -n $SERVER_QUEUE_MONITOR_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $SERVER_QUEUE_MONITOR_MSG $SERVER_QUEUE_MONITOR_DN" \
+            | mail -s "$SERVER_QUEUE_MONITOR_MSG" "$SERVER_QUEUE_MONITOR_ALERT_E"
+      print "$TIME $SERVER_QUEUE_MONITOR_MSG $SERVER_QUEUE_MONITOR_DN" \
+            | mail "$SERVER_QUEUE_MONITOR_ALERT_P"
+   fi
+   
+   if [[ -n $DTSESS_DN ]] &&  [[ -n $EMAIL_IT ]] ; then 
+      print "$TIME $DTSESS_MSG $DTSESS_DN" | mail -s "$DTSESS_MSG" "$DTSESS_ALERT_E"
+   elif [[ -n $DTSESS_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $DTSESS_MSG $DTSESS_DN" | mail -s "$DTSESS_MSG" "$DTSESS_ALERT_E"
+      print "$TIME $DTSESS_MSG $DTSESS_DN" | mail "$DTSESS_ALERT_P"
+   fi
+   
+   if [[ -n $STP_LM_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $STP_LM_MSG $STP_LM_DN" | mail -s "$STP_LM_MSG" "$STP_LM_ALERT_E"
+   elif [[ -n $STP_LM_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $STP_LM_MSG $STP_LM_DN" | mail -s "$STP_LM_MSG" "$STP_LM_ALERT_E"
+      print "$TIME $STP_LM_MSG $STP_LM_DN" | mail "$STP_LM_ALERT_P"
+   fi
+   
+   if [[ -n $STP_Sybase_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $STP_Sybase_MSG $STP_Sybase_DN" | mail -s "$STP_Sybase_MSG" "$STP_Sybase_ALERT_E"
+   elif [[ -n $STP_Sybase_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $STP_Sybase_MSG $STP_Sybase_DN" | mail -s "$STP_Sybase_MSG" "$STP_Sybase_ALERT_E"
+      print "$TIME $STP_Sybase_MSG $STP_Sybase_DN" | mail "$STP_Sybase_ALERT_P"
+   fi
+
+   if [[ -n $ATICTS_DN ]] &&  [[ -n $EMAIL_IT ]] ; then
+      print "$TIME $ATICTS_MSG $ATICTS_DN" | mail -s "$ATICTS_MSG" "$ATICTS_ALERT_E"
+   elif [[ -n $ATICTS_DN ]] &&  [[ -n $PAGE_IT ]] ; then
+      print "$TIME $ATICTS_MSG $ATICTS_DN" | mail -s "$ATICTS_MSG" "$ATICTS_ALERT_E"
+      print "$TIME $ATICTS_MSG $ATICTS_DN" | mail "$ATICTS_ALERT_P"
+   fi
+   
+}
+   
+
+
+################################################################################
+#
+#   SERVERS ALIVE FUNCTION
+#
+################################################################################
+
+function FUNC_SERVERS_ALIVE 
+{
+   # Checks that servers are pingable and reports uptime.
+   print "\n\n .........Code servers uptime check......................        "
+   SYSTEMS=$ALL_SYSTEMS
+   for x in $SYSTEMS; do
+      if ping -c 1 $x > /dev/null ; then
+         print "      $x:   \c"
+         rsh $x uptime | awk '{print $1" "$2" "$3" "$4" "$5" "$6}'
+	 SRV_UP="$SRV_UP $x"	#jhw *****
+      else
+	 SRV_DN="$SRV_DN $x"	#jhw *****
+         print "\n${REV}ERROR - $x is not reachable.\n${NORM}"
+         ((ERR_CT = ERR_CT + 1))
+      fi
+   done
+}   
+
+
+
+################################################################################
+#  PROCESSES FUNCTION
+################################################################################
+
+function FUNC_PROCESSES
+{
+   ######################
+   #  Check DB2 Java
+   ######################
+   SYSTEMS="essf1n3 essf1n7 essf1n11 "
+      print "\n\n.......Checking on DB2 Java ........................."
+#*#      print "      DB2 java daemon - checking on $x..."
+      for x in $SYSTEMS ; do
+         if rsh $x ps -ef | cut -c 1-2000 |grep -q "[d]b2jd" ; then
+            print "      db2jd is running on $x"
+	    DB2JAVA_UP="$DB2JAVA_UP $x"  # jhw
+         else
+   	    DB2JAVA_DN="$DB2JAVA_DN $x"  # jhw
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - There may be a problem with DB2JAVA on $x! \n${NORM}"
+            print " Log onto $x \n  and execute the db2jstrt 6790 line from /etc/rc.db2"  
+         fi
+      done
+
+   #################
+   #  Check DB2
+   #################
+   SYSTEMS="essf1n1 essf1n3 essf1n7 essf1n11 "
+      print "\n\n ......Checking on DB2 ............................."
+#*#      print "      DB2 - checking on $x..."
+      for x in $SYSTEMS; do
+         DB2num="$(rsh $x ps -ef | cut -c 1-2000 |grep [d]b2wdog | wc -l)"
+         if [[ $DB2num -eq 2 ]] && [[ $x = "essf1n1" ]] ; then
+            print "      db2 is running on $x"
+	    DB2_UP="$DB2_UP $x" 
+         elif [[ $DB2num -eq 3 ]] && [[ $x = "essf1n3" ]] ; then
+            print "      db2 is running on $x"
+	    DB2_UP="$DB2_UP $x" 
+         elif [[ $DB2num -eq 1 ]] && [[ $x = "essf1n7" ]] ; then
+            print "      db2 is running on $x"
+	    DB2_UP="$DB2_UP $x" 
+#*#         elif [[ $DB2num -eq 3 ]] && [[ $x = "essf1n11" ]] ; then
+         elif [[ $DB2num -eq 3 ]] && [[ $x = "essf1n11" ]] ; then
+            print "      db2 is running on $x"
+         else
+	    DB2_DN="$DB2_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - There may be a problem with DB2 on $x! \n${NORM}"
+            print "Log into the server and run the commands in /etc/rc.db2"
+         fi
+      done
+
+    #################
+    #  Check Oracle
+    #################
+    SYSTEMS="essf1n3 essf1n5 essf1n11 "
+    DEV_PMON_MIN=4
+    STAGE_PMON_MIN=6
+    PROD_PMON_MIN=7
+       print "\n\n ......Checking on Oracle .........................."
+       for x in $SYSTEMS; do
+          if [[ $x = essf1n3 ]] ; then
+             PMON_MIN=$DEV_PMON_MIN
+          elif [[ $x = essf1n5 ]] ; then 
+             PMON_MIN=$PROD_PMON_MIN
+          elif [[ $x = essf1n11 ]] ; then 
+             PMON_MIN=$STAGE_PMON_MIN 
+          fi
+          # checking for either process down,set modify global var accordingly 
+          ORAPMON_num="$(rsh $x ps -ef | cut -c 1-2000 |grep [o]ra_pmon | wc -l)"
+          LISTENER_num="$(rsh $x ps -fu oracle | cut -c 1-2000 |grep [L]ISTENER | wc -l)"
+          if [[ $ORAPMON_num -ge $PMON_MIN ]] && [[ $LISTENER_num -ge 1 ]] ; then
+	     ORACLE_UP="$ORACLE_UP $x"
+             print "       Oracle is running on $x"
+           elif [[ $ORAPMON_num -ge $PMON_MIN ]] ; then
+              print "\n${REV}ERROR -  ora_pmon is up on $x${NORM}"
+              print " but listener is not on  $x"
+              print " Contact the DBA \n"
+	      ORACLE_DN="$ORACLE_DN $x"
+              ((ERR_CT = ERR_CT + 1))
+           elif  [[ $LISTENER_num -ge 1 ]] ; then
+              print "\n${REV}ERROR -  Oracle Listener is up on $x${NORM}" 
+              print " but $PMON_MIN ora_pmon processes are not on  $x"
+              print " Contact the DBA \n"
+	      ORACLE_DN="$ORACLE_DN $x"
+              ((ERR_CT = ERR_CT + 1))
+           else 
+              print "\n${REV}ERROR - Both oracle pmon and listener are down on $x${NORM}"
+              print " Log onto appropriate node "
+              print " su - oracle and execute"
+              print " /etc/rc.oracle \n"  
+	      ORACLE_DN="$ORACLE_DN $x"
+              ((ERR_CT = ERR_CT + 1))
+           fi
+
+      done
+
+   ########################
+   #  Check MQ Series
+   ########################
+   SYSTEMS="essf1n3 essf1n7 essf1n11"
+      print "\n\n ......Checking on MQ Series........................"
+      for x in $SYSTEMS; do 
+         if [[ $x = essf1n3 ]] || [[ $x = essf1n11 ]] && [[ $HOUR -le 5 ]] ; then
+            print "      MQ may be down on $x but we are outside normal run hours."
+         elif rsh $x ps -ef | cut -c 1-2000 |grep -q -i "[m]q" > /dev/null ; then
+            print "      MQ is running on $x."
+	    MQ_UP="$MQ_UP $x"
+         else
+	    MQ_DN="$MQ_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - MQ is NOT running on $x\n${NORM}"
+            print " Log nto $x as root and  "
+            print " Execute /etc/rc.mqseries "
+            print "\n" 
+         fi
+      done
+
+
+   ########################
+   #  Check sendmail
+   ########################
+   SYSTEMS="essf1n13 "
+      print "\n\n ......Checking on Sendmail........................."
+      for x in $SYSTEMS; do 
+         if rsh $x ps -ef | cut -c 1-2000 |grep -q -i "[s]endmail" > /dev/null ; then
+            print "      sendmail is running on $x."
+	    SNDMAIL_UP="$SNDMAIL_UP $x"
+         else
+	    SNDMAIL_DN="$SNDMAIL_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - sendmail is NOT running on $x\n${NORM}"
+            print " Log into $x and Execute "/usr/lib/sendmail -bd -q30" "
+            print "\n" 
+         fi
+      done
+
+
+   ################################
+   #  Check CAEN License Managers
+   ################################
+   SYSTEMS="essf1n13 "
+      print "\n\n ......Checking on CAEN License Managers............."
+      for x in $SYSTEMS; do 
+         FV_LMnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[f]ieldview" |wc -l)"
+         IOFFICE_LMnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[i]office6" |wc -l)"
+         INTLF_LMnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[i]leaf" |wc -l)"
+         MATLAB_LMnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[T]MW5" |wc -l)"
+         MAYA_LMnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[m]aya_MS6A" |wc -l)"
+         if [ $FV_LMnum -eq 2 ] ; then
+            print "      Fieldview license manager is running on $x."
+	    FV_LM_UP="$FV_LM_UP $x"
+         else
+	    FV_LM_DN="$FV_LM_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Fieldview license manager is NOT running on $xi \n${NORM}"
+            print " Log onto $x as root and  "
+            print " Execute the line in /etc/inittab named flexfv"
+            print "\n" 
+         fi
+         if [ $IOFFICE_LMnum -eq 2 ] ; then
+            print "      Ioffice license manager is running on $x."
+	    IOFFICE_LM_UP="$IOFFICE_LM_UP $x" 
+         else
+	    IOFFICE_LM_DN="$IOFFICE_LM_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Ioffice license manager is NOT running on $xi \n${NORM}"
+            print " Log onto $x as root and  "
+            print " Execute the line in /etc/inittab named flexioff"
+            print "\n" 
+         fi
+         if [ $INTLF_LMnum -eq 2 ] ; then
+            print "      Interleaf license manager is running on $x."
+	    INTLF_LM_UP="$INTLF_LM_UP $x"
+         else
+	    INTLF_LM_DN="$INTLF_LM_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Interleaf license manager is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named flexleaf"
+            print "\n"
+         fi
+         if [ $MATLAB_LMnum -eq 3 ] ; then
+            print "      Matlab license manager is running on $x."
+	    MATLAB_LM_UP="$MATLAB_LM_UP $x"
+         else
+	    MATLAB_LM_DN="$MATLAB_LM_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Matlab license manager is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named flexmatl"
+            print "\n"
+         fi
+         if [ $MAYA_LMnum -eq 2 ] ; then
+            print "      Maya license manager is running on $x."
+	    MAYA_LM_UP="$MAYA_LM_UP $x"
+         else
+	    MAYA_LM_DN="$MAYA_LM_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Maya license manager is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named flexmaya"
+            print "\n"
+         fi
+      done
+
+
+
+   ################################
+   #  Check iPlanet web server
+   ################################
+   SYSTEMS="essf1n1 essf1n3 essf1n7 essf1n11 essf1n13"
+      print "\n\n ......Checking on iPlanet Web Server ............................."
+      for x in $SYSTEMS; do 
+         NESnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[u]xwdog" | wc -l)"
+         if [[ $NESnum -ge 2 ]] && [[ $x = "essf1n1" ]] ; then
+            print "      NES is running on $x."
+	    NES_UP="$NES_UP $x" 
+         elif [[ $NESnum -ge 7 ]] && [[ $x = "essf1n3" ]] ; then
+            print "      NES is running on $x."
+	    NES_UP="$NES_UP $x" 
+         elif [[ $NESnum -eq 4 ]] && [[ $x = "essf1n7" ]] ; then
+            print "      NES is running on $x."
+	    NES_UP="$NES_UP $x" 
+         elif [[ $NESnum -ge 3 ]] && [[ $x = "essf1n11" ]] ; then
+            print "      NES is running on $x."
+	    NES_UP="$NES_UP $x" 
+         elif [[ $NESnum -ge 3 ]] && [[ $x = "essf1n13" ]] ; then
+            print "      NES is running on $x."
+	    NES_UP="$NES_UP $x" 
+         else
+	    NES_DN="$NES_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - iPlanet Web Server is NOT running on $x${NORM}"
+            print " Log onto each node as root and execute the following"
+            print " command for the appropriate missing process \n"
+	    if [[ $x = essf1n1 ]] ; then
+               print " for essf1n1 "
+               print " /netscape/prod/server4/web/https-admserv/start "
+               print " /netscape/prod/server4/web/https-essf1n1-pcv/start \n "
+	    fi
+	    if [[ $x = essf1n3 ]] ; then
+               print " for essf1n3 "
+               print " /netscape/devp/server4/web/https-admserv/start "
+               print " /netscape/devp/server4/web/https-essf1n3-eb/start "
+               print " /netscape/devp/server4/web/https-essf1n3-vir/start "
+               print " /netscape/devp/server4/web/https-essf1n3-pcv/start "
+               print " /netscape/devp/server4/web/https-essf1n3-ebweb/start "
+               print " /netscape/devp/server4/web/https-essf1n3-ebweb-ext/start "
+               print " /netscape/devp/server4/web/https-essf1n3-nns/start \n "
+	    fi
+	    if [[ $x = essf1n7 ]] ; then
+               print " for essf1n7 "
+               print " /netscape/prod/server4/web/https-admserv/start"
+               print " /netscape/prod/server4/web/https-essf1n7-eb/start"
+               print " /netscape/prod/server4/web/https-essf1n7-nns/start"
+               print " /netscape/prod/server4/web/https-essf1n7-vir/start \n"
+	    fi
+	    if [[ $x = essf1n11 ]] ; then
+               print " for essf1n11 "
+               print " /netscape/stage/server4/web/https-admserv/start"
+               print " /netscape/stage/server4/web/https-essf1n11-eb/start"
+               print " /netscape/stage/server4/web/https-essf1n11-pcv/start"
+               print " /netscape/stage/server4/web/https-essf1n11-vir/start \n"
+               print " /netscape/stage/server4/web/https-essf1n11-psvs/start \n"
+               print " /netscape/stage/server4/web/https-essf1n11-ebweb-ext/start"
+               print " /netscape/stage/server4/web/https-essf1n11-ebweb/start \n"
+	    fi
+	    if [[ $x = essf1n13 ]] ; then
+               print " for essf1n13 "
+               print " /netscape/prod/server4/web/https-admserv/start "
+               print " /netscape/prod/server4/wer/https-essf1n13-ebweb/start \n "
+               print " /netscape/prod/server4/wer/https-essf1n13-ebwebssl/start \n "
+            fi
+         fi
+      done
+
+   ######################################
+   #  Check Netscape ns-cron process  
+   ######################################
+   SYSTEMS="essf1n1 essf1n3 essf1n7 essf1n11"
+      print "\n\n ......Checking on Netscape ns-cron............................."
+      for x in $SYSTEMS; do 
+         if rsh $x ps -ef | cut -c 1-2000 |grep -q "[n]s-cron" > /dev/null ; then
+	    NS_CRON_UP="$NS_CRON_UP $x"
+            print "      Netscape ns-cron is running on $x."
+         else
+	    NS_CRON_DN="$NS_CRON_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Netscape ns-cron is NOT running on $x \n${NORM}"
+            print " Logon onto $x as root and "
+            print " execute the line in /etc/inittab named webcron"
+         fi
+      done
+
+
+   #######################################
+   #  EBDT Weblogic Application Server
+   #######################################
+
+   print "\n\n ......Checking on EBDT Weblogic Application Server............................."
+
+# email only for dev and stage
+   SYSTEMS="essf1n3 essf1n11 "
+   for x in $SYSTEMS; do
+      if   ( [[ $PAGE_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebAppServer -m
+      elif ( [[ $EMAIL_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebAppServer -m
+      else
+         rsh $x /admin/qc/bin/qc.ebAppServer
+      fi
+   done
+
+   SYSTEMS="essf1n7 "
+   for x in $SYSTEMS; do
+      if   ( [[ $PAGE_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebAppServer -p
+      elif ( [[ $EMAIL_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebAppServer -m
+      else
+         rsh $x /admin/qc/bin/qc.ebAppServer
+      fi
+   done
+
+   #######################################
+   #  EBDT Weblogic Servlet Server
+   #######################################
+
+# email only for dev and stage
+   SYSTEMS="essf1n3 essf1n11 "
+   for x in $SYSTEMS; do
+      if   ( [[ $PAGE_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebServletServer -m
+      elif ( [[ $EMAIL_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebServletServer -m
+      else
+         rsh $x /admin/qc/bin/qc.ebServletServer
+      fi
+   done
+
+   SYSTEMS="essf1n7 "
+   for x in $SYSTEMS; do
+      if   ( [[ $PAGE_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebServletServer -p
+      elif ( [[ $EMAIL_IT = YES ]] ); then
+         rsh $x /admin/qc/bin/qc.ebServletServer -m
+      else
+         rsh $x /admin/qc/bin/qc.ebServletServer
+      fi
+   done
+
+   #########################
+   #  Check VIR Webserver
+   #########################
+   # 12/14/01 - daw - per Winston Comrie, removed stage check.
+   #SYSTEMS="essf1n3 essf1n7 essf1n11"
+
+   #04/05/02 - daw - per Joe Paul, put stage back into script.
+   #SYSTEMS="essf1n3 essf1n7 "
+   SYSTEMS="essf1n3 essf1n7 essf1n11"
+	print "\n\n ......Checking VIR Webserver  ....................."
+	for x in $SYSTEMS; do
+	   rsh $x /usr/local/qc/bin/vir_webchk
+	done
+
+
+   #########################
+   #  Check ELCADD NFS filesystems mounts
+   #########################
+   SYSTEMS="essf1n3 essf1n7 essf1n11"
+	print "\n\n ......Checking ELCADD NFS filesystem mounts  ....................."
+	for x in $SYSTEMS; do
+	   rsh $x /usr/local/qc/bin/check_elcadd_mount
+	done
+
+   #################
+   #  Check SNA
+   #################
+ #*#  SYSTEMS="essf1n3 essf1n7 essf1n11 iessf1n13 "
+   SYSTEMS="essf1n7 iessf1n13 "
+   for x in $SYSTEMS; do
+       if [[ "$(date +%H)" -le 2 ]] && [[ "$(date +%a)" = Mon ]] ; then
+          :
+       else
+          if   ( [[ $PAGE_IT = YES ]] ); then
+             rsh $x /admin/qc/bin/qc.sna -p  
+          elif ( [[ $EMAIL_IT = YES ]] ); then
+             rsh $x /admin/qc/bin/qc.sna -e  
+          else
+             rsh $x /admin/qc/bin/qc.sna
+          fi
+       fi
+   done
+
+
+
+#      print "\n\n ......Checking on SNA ............................."
+#      for x in $SYSTEMS; do 
+#         print ""
+#         if rsh $x ps -ef | cut -c 1-2000 |grep -q "[s]nasnmp" > /dev/null ; then
+#            print "      SNA is running on $x."
+#	    SNA_UP="$SNA_UP $x"  
+#         else
+#	    SNA_DN="$SNA_DN $x"  
+#            ((ERR_CT = ERR_CT + 1))
+#            print "\n${REV}ERROR- SNA  is NOT running on $x${NORM}"
+#            print " Log onto each node as root and execute"
+#            print " /etc/rc.sna"
+#            print "\n" 
+#         fi
+#         rsh $x smitsnaadmin status_lu62 |cut -c 1-2000 |grep IBMRDB 
+#         rsh $x smitsnaadmin status_lu62 |cut -c 1-2000 |grep SNA
+#         rsh $x smitsnaadmin status_lu62 |cut -c 1-2000 |grep "#INTER" 
+#      done
+#      print "      For #INTER and IBMRDB, session count should be at least 2."
+#      print "      For SNASVCMG, the session count should be at least one."
+#      print "      The session count rule does not apply to n13. "
+
+
+
+
+
+   #################
+   #  Check ADSM
+   #################
+   SYSTEMS="essf1n1 essf1n3 essf1n5 essf1n7 essf1n11 essf1n13 "
+      print "\n\n ......Checking on ADSM............................."
+      for x in $SYSTEMS; do 
+        if rsh $x ps -ef | cut -c 1-2000 | grep -q "dsmc sched" ; then
+            if rsh $x ps -ef | cut -c 1-2000 | grep -q "dsmc sched" ; then
+               print "      ADSM client process is running on $x."
+	       ADSM_UP="$ADSM_UP $x" 
+            else
+               print "      ADSM server process is running on $x."
+            fi
+         else
+	    ADSM_DN="$ADSM_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - ADSM  is NOT running on $x${NORM}"
+            print " CALL PAUL SKALSKI"
+         fi
+      done
+
+   SYSTEMS=essf1n13
+         for x in $SYSTEMS; do
+            if rsh $x ps -ef | cut -c 1-2000 | grep -q "dsmserv quiet" ; then
+               print "\n      ADSM server process is running on $x."
+            else
+               print "dsmserv quiet process is down on $x" | mailx -s "$x: qc:" unixadmin_pager
+            fi
+         done
+
+
+
+   ##################
+   #  Check Samba
+   ##################
+   SYSTEMS="iessf1n3 iessf1n5 iessf1n7 iessf1n13 "
+      print "\n\n ......Checking on Samba ............................."
+      for x in $SYSTEMS; do 
+         SAMBA_NMBnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[s]amba.*nmbd" |wc -l)"
+         if [ $SAMBA_NMBnum -eq 1 ] ; then
+            print "      Samba NMB is running on $x."
+	    SAMBA_NMB_UP="$SAMBA_NMB_UP $x"
+         else
+	    SAMBA_NMB_DN="$SAMBA_NMB_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Samba NMB is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named sambanmb"
+            print "\n"
+         fi
+         SAMBA_SMBnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[s]amba.*smbd" |wc -l)"
+         if [ $SAMBA_SMBnum -ge 1 ] ; then
+            print "      Samba SMB is running on $x."
+	    SAMBA_SMB_UP="$SAMBA_SMB_UP $x"
+         else
+	    SAMBA_SMB_DN="$SAMBA_SMB_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Samba SMB is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named sambasmb"
+            print "\n"
+         fi
+      done
+
+
+   ###################
+   #  Check CA-TNG
+   ###################
+#   SYSTEMS="essf1n1 essf1n3 essf1n5 essf1n7 essf1n11 iessf1n13 "
+   SYSTEMS="essf1n1 essf1n5 essf1n7 essf1n11 iessf1n13 "
+      print "\n\n ......Checking on CA-TNG ............................."
+      for x in $SYSTEMS; do 
+         CATNG_RUNnum="$(rsh $x su - aworks -c awservices status |cut -c 1-2000 |grep "RUNNING" |wc -l)"
+         if [ $CATNG_RUNnum -ge 7 ] ; then
+            print "      All key CA-TNG agents are running on $x."
+	    CATNG_UP="$CATNG_UP $x"
+         else
+	    CATNG_DN="$CATNG_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Only $CATNG_RUNnum agents are running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " First execute: su - aworks -c awservices stop"
+            print " Then execute: su - aworks -c awservices start"
+            print "\n"
+         fi
+      done
+
+
+   ####################
+   #  Check  ORBIX
+   ####################
+   SYSTEMS="essf1n1 essf1n3 essf1n11"
+      print "\n\n ......Checking on ORBIX ............................."
+      for x in $SYSTEMS; do
+         ORBIX_RUNnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[o]rbixd" |wc -l)"
+         if [[ "$x" = essf1n1 && "$ORBIX_RUNnum" -eq 3 ]] ; then
+            print "      Orbix is running on $x."
+           ORBIX_UP="$ORBIX_UP $x"
+         elif [ "$ORBIX_RUNnum" -eq 2 ] ; then
+            print "      Orbix is running on $x."
+           ORBIX_UP="$ORBIX_UP $x"
+         else
+           ORBIX_DN="$ORBIX_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - wrong number of ORBIX processes are running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named orbixvd"
+            print "\n"
+         fi
+      done
+
+
+   ##################
+   #  Check  TIMED
+   ##################
+   SYSTEMS="essf1n5 "
+      print "\n\n ......Checking on TIMED ............................."
+      for x in $SYSTEMS; do 
+         TIMED_RUNnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[t]imed " |wc -l)"
+         if [ $TIMED_RUNnum -eq 1 ] ; then
+            print "      Time daemon is running on $x."
+	    TIMED_UP="$TIMED_UP $x"
+         else
+	    TIMED_DN="$TIMED_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Time daemon is not running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named catia_timed"
+            print "\n"
+         fi
+      done
+
+   #######################
+   #  Check  BROADCASTD
+   #######################
+   SYSTEMS="essf1n5 "
+      print "\n\n ......Checking on BROADCASTD ............................."
+      for x in $SYSTEMS; do 
+         BROADCASTD_RUNnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[b]roadcastd " |wc -l)"
+         if [ $BROADCASTD_RUNnum -eq 1 ] ; then
+            print "      BROADCASTD is running on $x."
+	    BROADCASTD_UP="$BROADCASTD_UP $x"
+         else
+	    BROADCASTD_DN="$BROADCASTD_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - BROADCASTD is not running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named broadcastd"
+            print "\n"
+         fi
+      done
+
+   #################################
+   #  Check  SERVER_QUEUE_MONITOR
+   #################################
+   SYSTEMS="essf1n5 "
+      print "\n\n ......Checking on SERVER_QUEUE_MONITOR ............................."
+      for x in $SYSTEMS; do 
+         SERVER_QUEUE_MONITOR_RUNnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "catadm.*ksh.*server_queue_monitor " |cut -c 1-2000 |grep -v grep |wc -l)"
+         if [ $SERVER_QUEUE_MONITOR_RUNnum -ge 1 ] ; then
+            print "      Server queue monitor is running on $x."
+	    SERVER_QUEUE_MONITOR_UP="$SERVER_QUEUE_MONITOR_UP $x"
+         else
+	    SERVER_QUEUE_MONITOR_DN="$SERVER_QUEUE_MONITOR_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - Server queue monitor is not running on $x\n${NORM}"
+            print " This script is now executing the /catia/prod/bin/server_queue_monitor_launch"
+            rsh $x  "echo /catia/prod/bin/server_queue_monitor_launch |at now"
+            print "\n"
+         fi
+      done
+
+
+   ##################
+   #  Check  DTSESS
+   ##################
+   SYSTEMS="esc0001 "
+      print "\n\n ......Checking on DTSESS ............................."
+      for x in $SYSTEMS; do 
+         DTSESS_RUNnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[d]t " |wc -l)"
+         if [ $DTSESS_RUNnum -lt 100  ] ; then
+            print "      A normal number of dtsessions are running on $x."
+	    DTSESS_UP="$DTSESS_UP $x"
+         else
+	    DTSESS_DN="$DTSESS_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - $DTSESS_RUNnum DTSESSs are not running on $x\n${NORM}"
+            print "Looks like a runaway CDE thang. "
+            print " Log  as root and execute the following tweo lines to kill and restart:"
+            print " /usr/dt/bin/dtconfig -kill"
+            print " /etc/rc.dt;exit"
+            print "\n"
+         fi
+      done
+
+   ################
+   #  Check  STP
+   ################
+   SYSTEMS="essf1n3 essf1n11 "
+      print "\n\n ......Checking on STP ............................."
+      for x in $SYSTEMS; do 
+         STP_LMnum="$(rsh $x /GDBIN/STP/StP_V2.6/license/AIX41PWR/lmstat \
+                   -c /GDBIN/STP/StP_V2.6/license/license.dat \
+                   -a |cut -c 1-2000 |grep "license server UP" |wc -l)"
+         if [ $STP_LMnum -eq 1  ] ; then
+            print "      STP License Manager daemon is running on $x."
+	    STP_UP="$STP_UP $x" 
+         else
+	    STP_DN="$STP_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - STP License Manager daemon is not running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named stp"
+            print "\n"
+         fi
+
+         STP_Sybasenum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[G]DBIN\/STP\/Sybase" |wc -l)"
+         if [ $STP_Sybasenum -eq 2 ] ; then
+            print "      STP Sybase is running on $x."
+	    STP_Sybase_UP="$STP_Sybase_UP $x"
+         else
+	    STP_Sybase_DN="$STP_Sybase_DN $x"
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - STP Sybase is NOT running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the line in /etc/inittab named stp"
+            print "\n"
+         fi
+      done
+
+   ###########################
+   #  Check  ATICTS server processes
+   ###########################
+   SYSTEMS="essf1n7 essf1n11"
+      print "\n\n ......Checking on ATICTS ............................."
+      for x in $SYSTEMS; do 
+         ATICTSnum="$(rsh $x ps -ef |cut -c 1-2000 |grep "[o]dbcsrv" |wc -l)"
+         if [ $ATICTSnum -ge 1  ] ; then
+            print "      ATICTS is running on $x."
+            ATICTS_UP="$ATICTS_UP $x" 
+         else
+            ATICTS_DN="$ATICTS_DN $x" 
+            ((ERR_CT = ERR_CT + 1))
+            print "\n${REV}ERROR - ATICTS is not running on $x\n${NORM}"
+            print " Log  as root and  "
+            print " Execute the inittab entry named aticts"
+            print "\n"
+         fi
+      done
+}
+
+
+
+################################################################################
+#     M A I N   P R O G R A M
+################################################################################
+
+
+
+################################################################################
+#   GLOBAL VARIABLES USED TO PASS INFO BETWEEN FUNCTIONS AND MAIN PROGRAM
+################################################################################
+# variables for reverse video
+REV=$(tput rev)
+NORM=$(tput sgr0)
+DATE=`date +%y%m%d`
+DAY_OF_WEEK=`date +%u`
+DAY_OF_MONTH=`date +%e`
+HOUR=`date +%H`
+
+ALL_SYSTEMS="essf1n1 essf1n3 essf1n5 essf1n7 essf1n11 essf1n13 "
+
+# _UP and _DN  are initially set to null strings
+# _UP and _DN  are set within functions to name of servers.
+#      and reflect which servers pass or fail the function test.
+# init all ALERT_E with with email alias of person to notify
+#      when a server fails a test within a function
+# init all ALERT_P with with email pager alias of person to notify
+#      when a server fails a test within a function
+# init all _MSG  to a generic error message to send via page/email.
+
+# server responds
+SRV_UP=""
+SRV_DN=""
+SRV_ALERT_E="unixadmin"
+SRV_ALERT_P="unixadmin_pager"
+SRV_MSG=" QC SCRIPT ERROR REPORTED: Servers not responding on network: "
+
+#status of DB2 java
+DB2JAVA_UP=""
+DB2JAVA_DN=""
+DB2JAVA_ALERT_E="db2_admin,jason"
+DB2JAVA_ALERT_P="db2_admin_pager,jason"
+DB2JAVA_MSG="QC SCRIPT ERROR REPORTED: check DB2 java processes:  "
+
+#status of DB2
+DB2_UP=""
+DB2_DN=""
+DB2_ALERT_E="db2_admin,jason"
+DB2_ALERT_P="db2_admin_pager,jason"
+DB2_MSG="QC SCRIPT ERROR REPORTED: check DB2 processes:   "
+
+#Oracle
+ORACLE_UP=""
+ORACLE_DN=""
+# Walt Mercier agreed (9/18) that the DBA's - him really - should be notified for Oracle processes problems
+ORACLE_ALERT_E="unixadmin"
+ORACLE_ALERT_P="unixadmin_pager"
+ORACLE_MSG="QC SCRIPT ERROR REPOERTED: Check Oracle processes:   "
+
+#status of MQ series
+MQ_UP=""
+MQ_DN=""
+MQ_ALERT_E="unixadmin"
+MQ_ALERT_P="unixadmin_pager"
+MQ_MSG="QC SCRIPT ERROR REPORTED: check MQ Series processes:   "
+
+#status of unix sendmail
+SNDMAIL_UP=""
+SNDMAIL_DN=""
+SNDMAIL_ALERT_E="unixadmin"
+SNDMAIL_ALERT_P="unixadmin_pager"
+SNDMAIL_MSG="QC SCRIPT ERROR REPORTED: check Sendmail processes:  "
+
+#status of License Managers: Fieldview, Ioffice, Matlab, Maya  and Interleaf
+FV_LM_UP=""
+FV_LM_DN=""
+FV_LM_ALERT_E="unixadmin"
+FV_LM_ALERT_P="unixadmin_pager"
+FV_LM_MSG="QC SCRIPT ERROR REPORTED: check Fieldview LM processes:  "
+
+IOFFICE_LM_UP=""
+IOFFICE_LM_DN=""
+IOFFICE_LM_ALERT_E="unixadmin"
+IOFFICE_LM_ALERT_P="unixadmin_pager"
+IOFFICE_LM_MSG="QC SCRIPT ERROR REPORTED: check IOffice LM processes:  "
+
+INTLF_LM_UP=""
+INTLF_LM_DN=""
+INTLF_LM_ALERT_E="unixadmin"
+INTLF_LM_ALERT_P="unixadmin_pager"
+INTLF_LM_MSG="QC SCRIPT ERROR REPORTED: check Interleaf processes:  "
+
+MATLAB_LM_UP=""
+MATLAB_LM_DN=""
+MATLAB_LM_ALERT_E="unixadmin"
+MATLAB_LM_ALERT_P="unixadmin_pager"
+MATLAB_LM_MSG="QC SCRIPT ERROR REPORTED: check Matlab processes:  "
+
+MAYA_LM_UP=""
+MAYA_LM_DN=""
+MAYA_LM_ALERT_E="unixadmin"
+MAYA_LM_ALERT_P="unixadmin_pager"
+MAYA_LM_MSG="QC SCRIPT ERROR REPORTED: check Maya processes:  "
+
+# status of NES - Netscape Enterprise Server
+NES_UP=""
+NES_DN=""
+NES_ALERT_E="midware"
+NES_ALERT_P="midware_pager"
+NES_MSG="QC SCRIPT ERROR REPORTED: Netscape Enterprise processes:  "
+
+NS_CRON_UP=""
+NS_CRON_DN=""
+NS_CRON_ALERT_E="midware"
+NS_CRON_ALERT_P="midware_pager"
+NS_CRON_MSG="QC SCRIPT ERROR REPORTED: Netscape ns-cron processes:  "
+
+# status of SNA
+SNA_UP=""
+SNA_DN=""
+SNA_ALERT_E="unixadmin"
+SNA_ALERT_P="unixadmin_pager"
+SNA_MSG="QC SCRIPT ERROR REPORTED: check  SNA processes:   "
+
+# status of ADSM
+ADSM_UP=""
+ADSM_DN=""
+ADSM_ALERT_E="unixadmin"
+ADSM_ALERT_P="unixadmin_pager"
+ADSM_MSG="QC SCRIPT ERROR REPORTED: check ADSM processes:  "
+
+# status of SAMBA_NMB
+SAMBA_NMB_UP=""
+SAMBA_NMB_DN=""
+SAMBA_NMB_ALERT_E="unixadmin"
+SAMBA_NMB_ALERT_P="unixadmin_pager"
+SAMBA_NMB_MSG="QC SCRIPT ERROR REPORTED: check SAMBA_NMB processes:  "
+
+# status of SAMBA_SMB
+SAMBA_SMB_UP=""
+SAMBA_SMB_DN=""
+SAMBA_SMB_ALERT_E="unixadmin"
+SAMBA_SMB_ALERT_P="unixadmin_pager"
+SAMBA_SMB_MSG="QC SCRIPT ERROR REPORTED: check SAMBA_SMB processes:  "
+
+# status of CATNG
+CATNG_UP=""
+CATNG_DN=""
+CATNG_ALERT_E="unixadmin"
+CATNG_ALERT_P="unixadmin"
+CATNG_MSG="QC SCRIPT ERROR REPORTED: check CATNG processes:  "
+
+# status of ORBIX
+ORBIX_UP=""
+ORBIX_DN=""
+ORBIX_ALERT_E="unixadmin"
+ORBIX_ALERT_P="unixadmin_pager"
+ORBIX_MSG="QC SCRIPT ERROR REPORTED: check ORBIX processes:  "
+
+# status of TIMED
+TIMED_UP=""
+TIMED_DN=""
+TIMED_ALERT_E="unixadmin"
+TIMED_ALERT_P="unixadmin_pager"
+TIMED_MSG="QC SCRIPT ERROR REPORTED: check TIMED processes:  "
+
+# status of BROADCASTD
+BROADCASTD_UP=""
+BROADCASTD_DN=""
+BROADCASTD_ALERT_E="unixadmin"
+BROADCASTD_ALERT_P="unixadmin_pager"
+BROADCASTD_MSG="QC SCRIPT ERROR REPORTED: check BROADCASTD processes:  "
+
+# status of SERVER_QUEUE_MONITOR
+SERVER_QUEUE_MONITOR_UP=""
+SERVER_QUEUE_MONITOR_DN=""
+SERVER_QUEUE_MONITOR_ALERT_E="unixadmin"
+SERVER_QUEUE_MONITOR_ALERT_P="unixadmin_pager"
+SERVER_QUEUE_MONITOR_MSG="QC SCRIPT ERROR REPORTED: check SERVER_QUEUE_MONITOR processes:  "
+
+# status of CWS dtsessions
+DTSESS_UP=""
+DTSESS_DN=""
+DTSESS_ALERT_E="unixadmin"
+DTSESS_ALERT_P="unixadmin_pager"
+DTSESS_MSG="QC SCRIPT ERROR REPORTED: check DTSESS processes:  "
+
+# status of STP License Manager daemon
+STP_LM_UP=""
+STP_LM_DN=""
+STP_LM_ALERT_E="unixadmin"
+STP_LM_ALERT_P="unixadmin_pager"
+STP_LM_MSG="QC SCRIPT ERROR REPORTED: check STP License Manager processes:  "
+
+# status of STP Sybase instance
+STP_Sybase_UP=""
+STP_Sybase_DN=""
+STP_Sybase_ALERT_E="unixadmin"
+STP_Sybase_ALERT_P="unixadmin_pager"
+STP_Sybase_MSG="QC SCRIPT ERROR REPORTED: check STP Sybase processes:  "
+
+# status of aticts processes
+ATICTS_UP=""
+ATICTS_DN=""
+ATICTS_ALERT_E="unixadmin"
+ATICTS_ALERT_P="unixadmin_pager"
+ATICTS_MSG="QC SCRIPT ERROR REPORTED: check ATICTS:  "
+
+#init following to null, user can set value when starting qc
+EMAIL_IT=""
+PAGE_IT=""
+
+# counter for error's encountered
+integer ERR_CT=0
+
+
+
+################################################################################
+#   GETOPTS
+################################################################################
+while getopts "pesh" OPTION; do
+   case $OPTION in
+      p ) PAGE_IT="YES"           		;;
+      e ) EMAIL_IT="YES"           		;;
+      s ) SERVERS_ALIVE="SERVERS_ALIVE"		;;
+      h ) FUNC_HELP ; exit 0          		;;
+      * ) FUNC_HELP ; exit 0          		;;
+   esac
+done
+shift $(($OPTIND - 1))
+################################################################################
+
+# display header on screen before calling functions
+print "                     Output from /usr/local/bin/qc script                      "
+print "                                                                               "
+print "                     Run Time:                                                 "
+print "                     $(date)                              "
+print "                                                                               "
+sleep 1
+
+
+# verify root id is used to run program
+if [[ $LOGNAME != "root" || ( $(hostname) != "iesc0001"  ) ]]; then
+   print "\n   ...so sorry!\n   You must log into esc0001,"
+   print "   as root, to run this script.\n"
+   print "   Currently, you are logged on as $LOGNAME on $(hostname).\n\n"
+   exit 0
+fi
+
+
+# default is to run all tests unless want to know if server up only
+if [ "$SERVERS_ALIVE" = SERVERS_ALIVE ]
+  then   FUNC_SERVERS_ALIVE
+  else FUNC_SERVERS_ALIVE
+       FUNC_PROCESSES
+fi
+
+
+# Check to see if need to email or page
+if ( [[ $EMAIL_IT = YES ]] || [[ $PAGE_IT = YES ]] ); then
+   FUNC_ALERT
+fi
+
+print " *****  End of qc script at `date`. *****"
+print "\n\n "
+exit 0
+
+# END

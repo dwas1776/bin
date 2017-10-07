@@ -1,0 +1,367 @@
+# The enterprise server sudoers file.
+#
+# The master file is kept on essf1n13 as of 07/05/00
+#
+#  created:  07/04/00 - rjw 
+# modified:  07/05/00 - rjw - added the CHOSENFEW
+#            11/07/00 - rjw - added CAENNEWS
+#            11/15/00 - rjw - added CWS changes
+#            11/15/00 - rjw - added NIS master transfer changes
+#            01/03/01 - rjw - additional NIS master related changes
+#            01/22/01 - rjw - added midrange admins to NIS
+#            01/29/01 - rjw - added repquota for NISUPD1
+#            02/02/01 - rjw - added edquota for NISUPD1
+#            02/02/01 - rjw - placed under rcs control  
+#            03/28/01 - rjw - added a tvi command to NISCMND1
+#            06/28/01 - rjw - added restricted chown capability
+#            02/04/02 - rjw - added ecjl to NISUPD1
+#	     03/20/02 - jlf - added access for i2 commands
+#	     06/11/02 - jlf - added access for system performance commands
+#            08/05/02 - rjw - added redquota commands
+#            10/10/02 - rjw - added ability for caenapps to check netscape quotas
+#            10/14/02 - lhs - added Marybeth to group NISUPD3
+#            11/13/02 - rjw - added support for nisupdvi to drive dns updates
+#            09/02/03 - rjw - added ec8n to NISUPD2
+#            10/22/03 - lhs - added middleware start and stop of admin server
+#            05/04/04 - rjw - added clearcase commands and removed invalid users
+#            05/17/04 - rjw - added dns update commands
+#            07/06/04 - rjw - added dns commands to support upgrade of bind
+#            07/22/04 - daw - globally changed user ecc0 to dwasmer
+#            09/28/04 - tdg - added tgiardin to sudoers
+#            10/08/04 - lhs - added command to allow CATIA guys to update /etc/hosts.lpd
+#
+#
+# This file MUST be edited with the /usr/local/sbin/visudo command as root on the 
+# node identified above and then copied to all other nodes.  If done
+# correctly, one sudoers file can be used on all nodes.
+#        on essf1n13:
+#            /usr/local/sbin/visudo
+#            ci -l /etc/sudoers
+#            chmod 440 /etc/sudoers
+#            rdist -f /usr/local/etc/dist.sudo Config
+#
+# See the sudoers man page for the details on how to write a sudoers file:
+#      man -M /usr/local/man sudoers
+# on essdevp1.
+#
+# WARNING: BE VERY AWARE OF THE CAPABILITIES YOU ARE PROVIDING!!!
+# For example, below, CAENMAIL is given the capability to use /usr/sbin/edquota with
+# specific options to allow setting up quotas for new users.  If we simply gave out
+# the ability to use /usr/sbin/edquota with any arguments, CAENMAIL would have full
+# root capabilies.  The command "/usr/sbin/edquota <userID>" brings up a vi session,
+# from which you can get a root shell.
+#
+# RCS Information
+#
+# $Header: /etc/RCS/sudoers,v 1.44 2005/02/21 20:52:30 root Exp root $
+# @(#) $Revision: 1.44 $
+# @(#) $Date: 2005/02/21 20:52:30 $
+# @(#) $Author: root $
+# @(#) $Source: /etc/RCS/sudoers,v $
+#
+#
+
+
+##
+# Host alias specification
+##
+Host_Alias 	BINDSRVR = essf1n3, essf1n13
+Host_Alias 	CAEN = 153.11.1.0/255.255.255.0,153.11.2.0/255.255.255.0
+Host_Alias 	CASESRVR = essf1n3, essf1n13
+Host_Alias      CWS = esc0001, iesc0001
+Host_Alias	DEVNODE = essf1n3
+Host_Alias	ESSALL = essf1n1, essf1n3, essf1n5, essf1n7, essf1n9, essf1n11, essf1n13
+Host_Alias	ESSWEB = essf1n3, essf1n11, essf1n13
+Host_Alias 	MAILSRVR = essf1n3, essf1n13
+Host_Alias      NEWSSRVR = essf1n3, essf1n13
+Host_Alias      NISMASTER = essf1n5, mars
+Host_Alias 	PERIMETER_SERVERS = ecmonitr,flasher,key,plunger,whale
+Host_Alias	EDTNODE = essf1n7
+Host_Alias	WEBNODE = essf1n1, essf1n3, essf1n7, essf1n11, essf1n13
+
+
+##
+# User alias specification
+##
+User_Alias      BINDADM = ecn1,echf,ec8n,ecwr
+User_Alias 	CAENMAIL = rjw2,caenapps
+User_Alias 	CAENNEWS = rjw2,caenapps
+User_Alias      CASEADM = ecn1,ec8n
+User_Alias	CHOSENFEW = ecls
+User_Alias      NISUPD1 = ecio,ecgl,ecth,ecyi,ecjf,eciu,ect4,ecnt,ecus,ecn1,jfrench2,ecjl
+User_Alias      NISUPD2 = ecmk,ecn1,echf,ec8n,ecwr
+User_Alias      NISUPD3 = ecls,ecsp,dwasmer,ecn1,jfrench2
+User_Alias      QCER = ecls
+User_Alias      QUOTAED = ecgl,ecn1
+User_Alias	TESTUSR1 = ecls,ecn1,dwasmer
+User_Alias      WEBCAEN = ecls,ecgl,ecyi,echf,ecn1,rjw3,ebwebusr
+User_Alias      PERFDEV = ecls,ecgz
+User_Alias      MIDLWARE = eccf,ecgv,ecyi,ecg8,ecux
+User_Alias      SYSPERFGRP = jfrench2,eckb,metrics
+
+##
+# Runas alias specification
+##
+Runas_Alias	DB = oracle, sybase
+Runas_Alias	OP = root, operator
+
+##
+# Cmnd alias specification
+##
+
+Cmnd_Alias 	BINDCMND =                                                              \
+                    /usr/bin/chmod 660 /etc/named.dir/SUBD/db.*,                        \
+                    /usr/bin/chmod 660 /etc/named.dir/ADDR/db.*,                        \
+                    /usr/bin/chmod 664 /etc/named.dir/h2n_auto/*.txt,                   \
+                    /usr/bin/chgrp nisupd  /etc/named.dir/SUBD/db.*,                    \
+                    /usr/bin/chgrp nisupd  /etc/named.dir/ADDR/db.*,                    \
+                    /usr/bin/chgrp nisupd  /etc/named.dir/h2n_auto/*.txt,               \
+                    /usr/local/bin/ci -f -l  /etc/named.dir/SUBD/db.*,                  \
+                    /usr/local/bin/ci -f -l  /etc/named.dir/ADDR/db.*,                  \
+                    /usr/local/bin/ci -f -l  /etc/named.dir/h2n_auto/*.txt,             \
+                    /usr/bin/refresh -s named,                                          \
+                    /usr/local/sbin/rndc flush,                                         \
+                    /usr/local/sbin/rndc status,                                        \
+                    /usr/local/sbin/rndc reload
+
+Cmnd_Alias 	CASECMND =                                                              \
+                    /etc/rc.clearcase start,                                            \
+                    /etc/rc.clearcase stop,                                             \
+                    /opt/rational/clearcase/bin/cleartool [a-z]*,                       \
+                    !/opt/rational/clearcase/bin/cleartool shell,                       \
+                    /opt/rational/clearcase/etc/db_loader,                              \
+                    /opt/rational/clearcase/bin/clearlicense
+
+Cmnd_Alias 	MAILCMND = /usr/sbin/newaliases "",/usr/sbin/edquota -p defquota [a-z]*, \
+                    /usr/sbin/edquota -p defquota [1-9][0-9][0-9]*,                     \
+                    /usr/sbin/edquota -p nulquota [a-z]*,                               \
+                    /usr/sbin/edquota -p nulquota [1-9][0-9][0-9]*,                     \
+                    !/usr/sbin/edquota -p defquota root,                                \
+                    !/usr/sbin/edquota -p nulquota root,                                \
+                    /usr/sbin/quotacheck -v /MAIL, /usr/sbin/repquota -v /MAIL,         \
+                    /usr/bin/egrep * /etc/named.dir/*,                                  \
+                    /usr/ucb/mailq "" 
+
+Cmnd_Alias     MAILCMND2 =                                                              \
+                          /usr/sbin/repquota -v /lfcache,                               \
+                          /usr/sbin/repquota -v -g /lfcache,                            \
+                          /usr/sbin/repquota -v -u /lfcache,                            \
+                          /usr/sbin/repquota -v /user_files,                            \
+                          /usr/sbin/repquota -v -g /user_files,                         \
+                          /usr/sbin/repquota -v -u /user_files
+
+Cmnd_Alias     NEWSCMND = /usr/local/news/bin/ctlinnd
+
+Cmnd_Alias     NISCMND1 = /usr/bin/tvi /etc/hosts,                                      \
+                          /usr/bin/tvi /etc/group,                                      \
+                          /usr/bin/tvi /etc/passwd.nis,                                 \
+                          /usr/bin/tvi - /etc/group,                                    \
+                          /usr/bin/tvi -c /^*\: /etc/group,                             \
+                          /usr/bin/tvi -c /^*\: /etc/passwd.nis,                        \
+                          /usr/bin/tvi /etc/passwd.nis,                                 \
+                          /usr/bin/cp -p /etc/hosts /etc/hosts.bak,                     \
+                          /usr/bin/cp -p /etc/group /etc/group.bak,                     \
+                          /usr/bin/cp -p /etc/passwd.nis /etc/passwd.nis.bak,           \
+                          /usr/bin/cp -p /etc/hosts.bak /etc/hosts,                     \
+                          /usr/bin/cp -p /etc/group.bak /etc/group,                     \
+                          /usr/bin/cp -p /etc/passwd.nis.bak /etc/passwd.nis,           \
+                          /usr/local/bin/ci -f -l /etc/hosts,                           \
+                          /usr/local/bin/ci -f -l /etc/group,                           \
+                          /usr/local/bin/ci -f -l /etc/passwd.nis,                      \
+                          /usr/bin/chmod 664 /etc/passwd.nis,                           \
+                          /usr/bin/chown root\:nisupd /etc/passwd.nis,                  \
+                          /usr/bin/passwd [a-z]*,                                       \
+                          !/usr/bin/passwd *root*,                                      \
+                          /usr/bin/make -f /var/yp/Makefile hosts,                      \
+                          /usr/bin/make -f /var/yp/Makefile passwd group netid,         \
+                          /usr/lib/security/mkuser.sys,                                 \
+                          /usr/bin/rcp /etc/hosts iessf1n13\:/etc/named.dir/h2n_auto/catia_hosts.txt, \
+                          /usr/bin/rsh iessf1n13 /usr/bin/refresh -s named,             \
+                          /usr/bin/rsh iessf1n13 /usr/local/sbin/rndc reload,           \
+                          /usr/sbin/repquota -v /lfcache,                               \
+                          /usr/sbin/repquota -v -g /lfcache,                            \
+                          /usr/sbin/repquota -v -u /lfcache,                            \
+                          /usr/sbin/repquota -v /user_files,                            \
+                          /usr/sbin/repquota -v -g /user_files,                         \
+                          /usr/sbin/repquota -v -u /user_files,                         \
+                          /usr/sbin/edquota -p guest [a-z]*,                            \
+                          /usr/sbin/edquota -p guest [1-9][0-9][0-9]*,                  \
+                          !/usr/sbin/edquota -p guest root,                             \
+                          /usr/local/bin/make_hosts.lpd
+
+Cmnd_Alias     NISCMND2 = /usr/bin/tvi /etc/auto/auto.cddoc,                            \
+                          /usr/bin/tvi /etc/auto/auto.direct,                           \
+                          /usr/bin/tvi /etc/auto/auto.home,                             \
+                          /usr/bin/tvi /etc/auto/auto.home_dev,                         \
+                          /usr/bin/tvi /etc/auto/auto.home_stg,                         \
+                          /usr/bin/tvi /etc/auto/auto.gdbin,                            \
+                          /usr/bin/tvi /etc/auto/auto.gdbin_dev,                        \
+                          /usr/bin/tvi /etc/auto/auto.gdbin_stg,                        \
+                          /usr/bin/tvi /etc/auto/auto.project,                          \
+                          /usr/bin/tvi /etc/auto/auto.project_dev,                      \
+                          /usr/bin/tvi /etc/auto/auto.project_stg,                      \
+                          /usr/bin/cp -p /etc/auto/auto.* /etc/auto/auto.*.bak,         \
+                          /usr/bin/cp -p /etc/auto/auto.*.bak /etc/auto/auto.*,         \
+                          /usr/bin/chmod 644 /etc/auto/auto.*,                          \
+                          /usr/bin/make -f /var/yp/Makefile auto.cddoc,                 \
+                          /usr/bin/make -f /var/yp/Makefile auto.direct,                \
+                          /usr/bin/make -f /var/yp/Makefile auto.home,                  \
+                          /usr/bin/make -f /var/yp/Makefile auto.home_dev,              \
+                          /usr/bin/make -f /var/yp/Makefile auto.home_stg,              \
+                          /usr/bin/make -f /var/yp/Makefile auto.gdbin,                 \
+                          /usr/bin/make -f /var/yp/Makefile auto.gdbin_dev,             \
+                          /usr/bin/make -f /var/yp/Makefile auto.gdbin_stg,             \
+                          /usr/bin/make -f /var/yp/Makefile auto.project,               \
+                          /usr/bin/make -f /var/yp/Makefile auto.project_dev,           \
+                          /usr/bin/make -f /var/yp/Makefile auto.project_stg,           \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.cddoc,                \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.direct,               \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.home,                 \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.home_dev,             \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.home_stg,             \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.gdbin,                \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.gdbin_dev,            \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.gdbin_stg,            \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.project,              \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.project_dev,          \
+                          /usr/local/bin/ci -f -l  /etc/auto/auto.project_stg
+
+Cmnd_Alias     NISCMND3 = /usr/bin/tvi /etc/services,                                   \
+                          /usr/bin/cp -p /etc/services /etc/services.bak,               \
+                          /usr/bin/cp -p /etc/services.bak /etc/services,               \
+                          /usr/local/bin/ci -f -l /etc/services,                        \
+                          /usr/bin/make -f /var/yp/Makefile services
+
+
+Cmnd_Alias      QCCMND = /usr/local/bin/qc.test
+
+Cmnd_Alias      QUOTA1 =                                                                \
+                          /usr/local/bin/redquota -u [a-z]*,                            \
+                          !/usr/local/bin/redquota -u root,                             \
+                          !/usr/local/bin/redquota -u ec*,                              \
+                          /usr/local/bin/redquota -g [a-z]*,                            \
+                          /usr/local/bin/redquota -g [1-9][a-z]*,                       \
+                          !/usr/local/bin/redquota -g root
+
+
+Cmnd_Alias      RCHOWN1 =                                                               \
+                          /usr/local/bin/chown.ksh * PWD*
+
+Cmnd_Alias      RCHOWN2 =                                                               \
+                          /usr/bin/chmod g-s *,                                         \
+                          /usr/bin/chmod u-s *,                                         \
+                          /usr/bin/chown -h [1-9][0-9][0-9]* *,                         \
+                          /usr/bin/df,                                                  \
+                          /usr/bin/ls,                                                  \
+                          /usr/bin/pwd
+
+
+Cmnd_Alias      TESTCMND1 =                                                             \
+                          /usr/local/bin/edquota -u [a-z]*,                             \
+                          /usr/sbin/edquota -u [1-9][0-9][0-9]*,                        \
+                          !/usr/sbin/edquota -u root,                                   \
+                          /usr/local/bin/edquota -g [a-z]*,                             \
+                          /usr/sbin/edquota -g [1-9][0-9][0-9]*,                        \
+                          !/usr/sbin/edquota -g system,                                 \
+                          !/usr/sbin/edquota -g staff,                                  \
+                          !/usr/sbin/edquota -g bin,                                    \
+                          !/usr/sbin/edquota -g adm,                                    \
+                          !/usr/sbin/edquota -g sys,                                    \
+                           /usr/bin/vi /etc/sudoers
+
+Cmnd_Alias      PERFCMD =                                                               \
+                          /usr/bin/iptrace,                                             \
+                          /usr/sbin/tcpdump,                                            \
+                          /usr/bin/startsrc -s iptrace *,                               \
+                          /usr/bin/stopsrc -s iptrace,                                  \
+                          /usr/bin/rm /tmp/*
+
+Cmnd_Alias      SYSPERF =                                                               \
+                          /usr/lpp/ssp/css/estat,                                       \
+                          /usr/bin/svmon
+
+Cmnd_Alias      MIDLWARECMD1 =                                                           \
+                          /netscape/devp/server4/web/https-admserv/start "",             \
+                          /netscape/devp/server4/web/https-admserv/stop "",              \
+                          /netscape/stage/server4/web/https-admserv/start "",            \
+                          /netscape/stage/server4/web/https-admserv/stop "",             \
+                          /netscape/prod/server4/web/https-admserv/start "",             \
+                          /netscape/prod/server4/web/https-admserv/stop "",              \
+                          /usr/bin/rm /netscape/devp/server4/web/https-admserv/logs/pid,     \
+                          /usr/bin/rm /netscape/stage/server4/web/https-admserv/logs/pid,    \
+                          /usr/bin/rm /netscape/prod/server4/web/https-admserv/logs/pid
+
+##
+# Override builtin defaults
+##
+Defaults	insults
+
+##
+# User specification
+##
+
+# root can run anything on any machine as any user
+root		ALL = (ALL) ALL
+
+
+# allow caen admins to run bind commands 
+BINDADM         BINDSRVR =                                                      \
+                NOPASSWD: BINDCMND
+
+# allow mail and quota related commands for caen admins on mail servers
+CAENMAIL	MAILSRVR =							\
+                NOPASSWD: MAILCMND
+
+# allow a check of the quotas on esscatia for netscape mail troubleshooting
+CAENMAIL	NISMASTER =						\
+                NOPASSWD: MAILCMND2
+
+# allow caen admins to run news commands as news
+CAENNEWS        NEWSSRVR =                                                      \
+                (news) NOPASSWD: NEWSCMND
+
+# allow caen admins to run clearcase commands   
+CASEADM         CASESRVR =                                                      \
+                NOPASSWD: CASECMND
+
+# the real sysadmins can run anything on any machine without a password
+CHOSENFEW 	ALL = NOPASSWD: ALL
+
+# allow defquota to run chown on the web servers
+defquota        ESSWEB    =                                                     \
+                (ALL) NOPASSWD: RCHOWN2
+
+# allow NIS file updates and the ypmake
+NISUPD1         NISMASTER =                                                     \
+                NOPASSWD: NISCMND1
+
+NISUPD2         NISMASTER =                                                     \
+                NOPASSWD: NISCMND2
+
+NISUPD3         NISMASTER =                                                     \
+                NOPASSWD: NISCMND1,                                             \
+                NOPASSWD: NISCMND2,                                             \
+                NOPASSWD: NISCMND3
+
+QUOTAED         NISMASTER =                                                     \
+                NOPASSWD: QUOTA1
+
+TESTUSR1	DEVNODE   =                                                     \
+                NOPASSWD: TESTCMND1
+
+# allow server based web IDs to run the restricted chown as defquota
+WEBCAEN         ESSWEB    =                                                     \
+                (defquota) NOPASSWD: RCHOWN1
+
+# allow Bob Randall to run performance tools
+PERFDEV         DEVNODE,EDTNODE =                                               \
+                NOPASSWD: PERFCMD
+ 
+# allow  access to system performance tools
+SYSPERFGRP      ESSALL =                                                        \
+                NOPASSWD: SYSPERF
+
+
+# Allow Middleware admins to start and stop admin web server
+MIDLWARE        WEBNODE =                                                       \
+                NOPASSWD: MIDLWARECMD1

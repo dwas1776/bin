@@ -1,0 +1,9 @@
+LOGFILE=/admin/metrics/logs/sysstat_logs/sysstat_$(hostname)_
+
+CURRENT=90
+until [[ $CURRENT = -1 ]] ; do
+   let NEW=$CURRENT+1
+   mv ${LOGFILE}${CURRENT}.xls   ${LOGFILE}${NEW}.xls
+   let CURRENT=$CURRENT-1
+done
+

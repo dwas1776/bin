@@ -1,0 +1,26 @@
+#!/bin/ksh
+# make device files for each channel of ibm6098 units
+#      set all devices to reserved for test
+
+#DEVDIR="/userdata/b45/ecb1/ibm6098"
+DEVDIR="/gdeb/pool5080"
+
+for u in a b c d e f g
+do
+   for c in 0 1 2 3
+   do
+      case $u in
+      a) set -A channel 02 0a 0c 0e;;
+      b) set -A channel e0 e2 e4 e6;;
+      c) set -A channel b8 ba bc be;;
+      d) set -A channel f0 f1 f2 f3;;
+      e) set -A channel f4 f5 f6 f7;;
+      f) set -A channel b4 b5 b6 b7;;
+      g) set -A channel d4 d5 d6 d7;;
+      esac
+      for s in 0 1 2 3 4 5 6 7 8 9 a b c d e f
+      do
+         touch $DEVDIR/devr$c$s$u${channel[$c]}$s
+      done
+   done
+done

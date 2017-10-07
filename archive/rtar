@@ -1,0 +1,111 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	rtar
+#   DATE:	Dec. 2, 1998
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:	tar a source file or directory structure on one machine, send it
+#		to another machine and untar it to a specified target directory.
+#
+#   Syntax:	rtar -s {source hostname:directory/file} -t {target hostname:directory}
+#
+#   Revised:
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+
+# tar cf - ${SOURCE} | rsh ${REMOTEHOST} tar xvf -
+
+
+
+#######################################|
+#    ERROR MESSAGE FUNCTION
+#######################################|
+function ERROR_MSG {
+   print "\nUSAGE:   tarrsh [-v] -s {source directory/file}"
+   print "                 -h {remote host} [-t {target directory}] \n\n\n\
+              where  -v   Indicates to run the tar command in verbose mode \n\n\
+                     -s   The source file or directory on the local host \n\n\
+                     -h   The name of the remote host \n\n\
+                     -t   The target directry on the remote host. \n\
+                          If no -t option is specified, the default \n\
+                          target directory will be the /tmp directory \n\
+                          on the host system\n\n\n"
+   exit 1
+}
+
+#######################################|
+#    M A I N
+#######################################|
+while getopts ":s:h:t:i" OPTION; do
+   case $OPTION in
+      s ) SOURCEDIR="$OPTARG"		;;
+      h ) REMOTEHOST="$OPTARG"		;;
+      t ) TARGETDIR="$OPTARG"	;;
+      i ) VERBOSE="v"			;;
+      \?) ERROR_MSG
+   esac
+done
+shift $(($OPTIND - 1))
+
+#######################################|
+#    CHECK THAT SOURCE DIR EXISTS.
+#######################################|
+if [[ -z "$SOURCEDIR" ]]; then
+   tput rev
+   print "\n   No source file specified.  Abort!"
+   tput sgr0
+   ERROR_MSG 
+fi
+if [ ! -d $SOURCEDIR ]; then
+   Print "\n   First argument must be a local directory\n^G"
+   ERROR_MSG 
+fi
+
+#######################################|
+#    CHECK THAT REMOTE HOST WAS SPECIFIED, 
+#    IS REACHABLE AND THAT USER HAS
+#    RSH PERMISSIONS. 
+#######################################|
+if [[ -z "$REMOTEHOST" ]]; then
+   tput rev
+   print "\n   No remote host specified.  Abort!"
+   tput sgr0
+   ERROR_MSG 
+fi
+if ping -c 1 $REMOTEHOST 2>/dev/null >/dev/null; then
+   : #contacted $REMOTEHOST
+else
+   print "\n\n   ERROR:  $REMOTEHOST is not reachable.\n\n"
+   exit 0
+fi
+if rsh $REMOTEHOST hostname; then
+   : #continue
+else
+   tput rev
+   print "\n   You may not have rsh permissions. Abort!"
+   tput sgr0
+   ERROR_MSG
+fi
+
+#######################################|
+#    CHECK THAT TARGET DIRECTORY EXISTS, 
+#    IF NOT, CREATE IT.
+#    IF NO TARGET WAS SPECIFIED,  THEN /TMP, 
+#    THE DEFAULT DIRECTORY, WILL BE USED.
+#######################################|
+TARGETDIR=${TARGETDIR:=/tmp}
+REMOTEDIR=$(rsh $REMOTEHOST ls -lF $TARGETDIR | grep "/$")
+if [[ -z $REMOTEDIR ]]; then
+   rsh mkdir -p $TARGETDIR
+fi
+
+#######################################|
+#    TAR SOURCE, SEND TO REMOTE HOST 
+#    AND UNTAR INTO TARGET 
+#######################################|
+
+cd $SOURCEDIR
+tar -c${VERBOSE}f- . | rsh $REMOTEHOST -n "cd $TARGETDIR && tar -x${VERBOSE}f-"
+
+# END

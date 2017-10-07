@@ -1,0 +1,12 @@
+#!/bin/ksh
+# list contents of a volumn group in format acceptable
+# to /maint/bin/mklvfs
+
+lsvg -l $1 | tail -n +3 | while read lv j1 lp j2 j3 j4 mtpt
+do
+  if [[ $mtpt != "N/A" ]]
+  then
+    print "$1 $lv $lp $mtpt"
+  fi
+done
+exit 0

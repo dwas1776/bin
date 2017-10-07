@@ -1,0 +1,16 @@
+# Synopsis:
+# List group memberships in increasing order of numeric group ID.
+# Use NIS if ypbind is running; else use local group file.
+
+if [ `domainname` ]
+then
+	GRP="ypcat group"
+else
+	GRP="cat /etc/group"
+fi
+
+case $# in
+0)	${GRP} | awk -F: '/'${LOGNAME}'/ {printf "%4d %s\n", $3, $1}' | sort -n | cut -c6- ;;
+*)	${GRP} | awk -F: '/'$1'/ {printf "%4d %s\n", $3, $1}' | sort -n | cut -c6- ;;
+esac
+
