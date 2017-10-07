@@ -1,0 +1,32 @@
+#!/bin/ksh
+# create logical volumes/filesystems based on input parameters
+# see also /maint/bin/lslvfs
+
+function CrFsLv {
+   # Syntax: vg lv PPs fs
+   #print "mklv -y$2 $1 $3\n  crfs -vjfs -d $2 -m $4 $opts"
+   opts="-A yes -p rw -t no -a frag=4096 -a nbpi=4096 -a compress=no"
+   mklv -y$2 $1 $3
+   crfs -vjfs -d $2 -m $4 $opts
+}
+
+#  vg      lv siz mount-pt
+#catiavg common	2 /common
+
+if [[ $1 = "-" ]]
+then
+   true
+elif [[ ! -f $1 ]]
+then
+   print -u2 -- "$1: filename does not exist."
+   print -u2 -- "Syntax: mklvfs fn|-"
+   print -u2 -- "FileFormat: 'vg lv #PPs mount-pt'"
+   exit 1
+fi
+
+cat $1 | while read vg lv siz mtpt
+do
+   CrFsLv $vg $lv $siz $mtpt
+done
+
+exit

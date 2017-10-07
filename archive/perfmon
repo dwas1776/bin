@@ -1,0 +1,18 @@
+if [ -z "$1" ]; then
+   PERIOD=5
+else
+   PERIOD=$1
+fi
+while :;do
+   COUNT=0
+   print "\ntime   ps  3mem  r  b   avm    fre   re  pi  po  fr   sr  cy  in   sy  cs us sy id wa "
+   while [ "$COUNT" -le 9 ] ; do
+      PAGE=$(lsps -s | tail -n1 | awk '{print $2}')
+      MEM=$(ps aux | sort -nk4 | tail -n3 | awk '{sum+=$4 ; print sum}' | tail -n 1)
+      VMSTAT=$(vmstat $PERIOD 2 | tail -n1)
+      print "$(date +%T)  $PAGE  $MEM $VMSTAT"
+      let COUNT=$COUNT+1
+      sleep $PERIOD
+   done
+done
+

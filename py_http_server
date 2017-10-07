@@ -1,0 +1,7 @@
+exit
+
+at prompt, enter command to start http server:
+  $ python -m SimpleHTTPServer 8000 &
+
+enter following in browser address
+  localhost:8000

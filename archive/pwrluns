@@ -1,0 +1,28 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:           pwrluns
+#   DATE:               July 4, 2004
+#   AUTHOR:             David A. Wasmer
+#   PURPOSE:            provide LUN to PVID mapping
+#   SYNTAX:
+#   RELATED FILES:
+#
+#   REVISIONS:
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+HOST=$(hostname)
+HDISKPOWERS=$(lspv | grep hdiskpower | awk '{print $1}' | sed "s/hdiskpower//g" | sort -n | sed "s/^/hdiskpower/g" )
+NUM_LUNS=$(print "$HDISKPOWERS" | wc -l)
+print "HOST\t\tPV\t\tSIZE\tVG\tLUN_HEX\tLUN_DEC\tPVID"
+for x in $HDISKPOWERS ; do
+    LUN_HEX=$(lscfg -v -l $x | grep FL | sed "s/\./ /g" | awk '{print $4}') 
+    LUN_DEC=$(print "ibase=16 \n  $LUN_HEX \n" | /usr/bin/bc)
+    PVID=$(lspv | grep "$x " | awk '{print $2}')
+    VG=$(lspv | grep "$x " | awk '{print $3}')
+    SIZE=$(bootinfo -s $x)
+    print "$HOST\t$x\t$SIZE\t$VG\t$LUN_HEX\t$LUN_DEC\t$PVID"
+done
+print "\n\nTOTAL NUMBER OF LUNS   =$NUM_LUNS\n"
+
+# END

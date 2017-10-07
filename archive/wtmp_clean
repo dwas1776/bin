@@ -1,0 +1,37 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	/maint/bin/
+#   DATE:	, 1999
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:	
+#
+#   Syntax:	
+#
+#   Revised:	
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+banner "wtmp clean"
+print "
+
+   cp -p /var/adm/wtmp /tmp/wtmp
+   cd /tmp
+   /usr/sbin/acct/fwtmp < /tmp/wtmp > wtmp.ascii
+
+             vi
+             :set dir=/usr
+             :e wtmp.ascii
+
+             Find the first Sunday of the last month
+
+             :1,.d
+             :wq
+
+   /usr/sbin/acct/fwtmp -ic < wtmp.ascii > wtmp2
+   cp -p wtmp2 /var/adm/wtmp
+   Log out and back in and verify that \"last -1\" shows root as still logged in.
+
+" 
+
+# END

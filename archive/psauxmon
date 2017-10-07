@@ -1,0 +1,39 @@
+#!/bin/ksh 
+# set -x
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	psauxmon
+#   DATE:	Feb 23, 2000
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:	Capture system stats
+#
+#   Syntax:	
+#
+#   Revised:	
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+SCRPTID="$(basename ${0})"
+STDOUTFIL="$HOME/data/mon_logs/$SCRPTID.$(date +%m%d).log"
+TIME=$(date +%T)
+
+if [ ! -d $(dirname $STDOUTFIL) ]; then
+   mkdir -p $(dirname $STDOUTFIL)
+fi
+
+if [ ! -f $STDOUTFIL ]; then
+   {  print  "          $SCRPTID   report"
+      print "         $(date)\n\n\nTIME  USER       PID %CPU %MEM   SZ  RSS    TTY STAT    STIME  TIME COMMAND" >> $STDOUTFIL
+   }  >  $STDOUTFIL
+fi
+
+# Lists all non-zero CPU processes and prints to log file.
+print "" >> $STDOUTFIL
+{
+for x in $(ps aux | grep -v PID | awk '{print $2 "   " $3}' | grep -v 0. | awk '{print $1}') ; do
+    ps aux $x | grep -v USER | sort +2  
+done
+} | sed "s/^/${TIME}    /g" >> $STDOUTFIL
+
+
+# END

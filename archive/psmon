@@ -1,0 +1,33 @@
+#!/bin/ksh 
+# set -x
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:	psmon
+#   DATE:	Feb 23, 2000
+#   AUTHOR:	David A. Wasmer
+#   PURPOSE:	Capture system stats
+#
+#   Syntax:	
+#
+#   Revised:	
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+SCRPTID="$(basename ${0})"
+STDOUTFIL="$HOME/data/mon_logs/$SCRPTID.$(date +%m%d).log"
+
+if [ ! -d $(dirname $STDOUTFIL) ]; then
+   mkdir -p $(dirname $STDOUTFIL)
+fi
+
+if [ ! -f $STDOUTFIL ]; then
+   {  print  "          $SCRPTID   report"
+      print "         $(date)\n\n\nTime         Total Number of Processes"
+      print "======================================="
+   }  >  $STDOUTFIL
+fi
+
+let NumPROC="($(ps aux | wc -l ) - 2 )"
+print "$(date +%T)              $NumPROC" >> $STDOUTFIL
+
+# END

@@ -1,0 +1,9 @@
+
+alias vmtune=/usr/samples/kernel/vmtune
+integer maxpageahead minfree
+vmtune  | awk 'NR==4{print $4,$5}' | read maxpageahead minfree
+while :; do
+   print "vmtune -f $minfree -F $(($minfree+maxpageahead))
+read
+((minfree=$minfree*2))
+done

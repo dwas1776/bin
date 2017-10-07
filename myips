@@ -1,111 +1,49 @@
 #!/bin/bash
 #####################################################################
-# NAME
-#    myips
+# NAME:
+#   myips -- list all active networks
 #
-# SYNOPSIS
-#    myips [-i {interval}]
+# SYNOPSIS:
+#   myips
 #
-# DESCRIPTION
-#    For Mac OS X, this will print the time, primary interface, 
-#    status of the interface, private IP, and public IP
-#
-#              If you provide no options, it will
-#              produce these values once and then exit.
-#
-#              The "-i" option, followed with an integer
-#              will produce a continuous loop with an
-#              interval equal to the integer argument you
-#              provide.  Example: myips -i 30
+# DESCRIPTION:
+#   For Mac OS X, list the active networks by port and protocol
 #
 #####################################################################
 # REVISIONS:
-#  2017/09/28  DW  added LASTIP and MODIFIED
-#  2017/09/28  DW  created func for interface and status
-#  2017/09/28  DW  creation date
+#   20171006 DW creation date
 #
 #####################################################################
 
-# VARIABLES
-LOGFILE=/tmp/myips.out
-LASTIP="$(cat $LOGFILE)"
-MODIFIED="$(stat -f "%Sm" $LOGFILE)"
-cat /dev/null > $LOGFILE
+NETWORKS=$(networksetup -listnetworkserviceorder | grep 'Hardware Port')
+printf "\nPRIVATE IPs"
+printf "\n=================================================================="
+printf "\n Interface \tIP Address \tMAC Address \t\tProtocol"
+printf "\n=================================================================="
+while read line; do
+    PROTOCOL=$(echo $line | awk -F  "(, )|(: )|[)]" '{print $2}')
+    PORT=$(echo $line | awk -F  "(, )|(: )|[)]" '{print $4}')
+    if [ -n "${PORT}" ]; then
+        IFCONFIG="$(ifconfig ${PORT} 2>/dev/null)"
+        echo "${IFCONFIG}" | grep 'status: active' > /dev/null 2>&1
+        rc="$?"
+        if [ "$rc" -eq 0 ]; then
+            CUR_PORT="${PORT}"
+            CUR_PROTOCOL="${PROTOCOL}"
+            CUR_MAC=$(echo "${IFCONFIG}" | awk '/ether/{print $2}')
+            CUR_IP=$(ipconfig getifaddr ${CUR_PORT})
+            printf "\n   ${CUR_PORT} \t\t${CUR_IP} \t${CUR_MAC} \t${CUR_PROTOCOL}"
+        fi
+    fi
 
-# FUNCTIONS
-usage() {
-    echo "Usage: "
-    echo "     no options will display the time, private IP,"
-    echo "     public IP and then exit."
-    echo ""
-    echo "     -i followed by an integer will loop by that interval."
-    echo ""
-    exit 0
-}
+done <<< "$(echo "${NETWORKS}")"
 
-Time() {
-  t0=$(date "+%b %d %H:%M:%S %Y")
-}
-
-Interface() {
-  en=$(netstat -rn | awk '{ if ($1 ~/default/) {print $6}}')
-}
-
-Status() {
-  Interface
-  STAT=$(ifconfig ${en} | awk '{ if ($1 ~/status/) {print $NF}}')
-}
-
-PublicIP() {
-  PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com | tee -a "${LOGFILE}")
-}
-
-PrivateIP() {
-  Interface
-  PriIP=$(ipconfig getifaddr ${en})
-}
-
-#   GETOPTS
-while getopts ":i:" opt; do
-    case $opt in 
-        i)  INTERVAL="${OPTARG}"
-            ;;
-        *)  usage
-            ;;
-    esac
-done
-shift $(($OPTIND - 1))
-
-# RUN ONCE
-if [ -n "${INTERVAL}" ]; then
-  clear
-else
-  Time
-  Interface
-  Status
-  PrivateIP
-  PublicIP
-  printf "Command last run:\t${MODIFIED}\n"
-  printf "Public IP was:\t\t$(cat $LOGFILE)\n\n"
-  printf "Time:\t\t\t${t0}\nInterface:\t\t${en}\nStatus:\t\t\t${STAT}\n"
-  printf "Private IP:\t\t${PriIP}\nPublic IP:\t\t${PubIP}\n"
-  #cat /dev/null > $LOGFILE
-  exit 0
-fi
-
-# CONTINUOUS LOOP
-while :;do
-  printf "\n\tDate/Time\t\t   Public IP\n"
-  printf "  ==============================================\n"
-  COUNTER=0
-  while [ $COUNTER -lt 24 ]; do
-    Time
-    PublicIP
-    printf "  ${t0}\t\t${PubIP}\n"
-    let COUNTER=COUNTER+1
-    sleep $INTERVAL
-    cat /dev/null > ${LOGFILE}
-  done
-done
+printf "\n\nPUBLIC IP"
+printf "\n=================================================================="
+printf "\n IP Address \t\tFQDN"
+printf "\n=================================================================="
+PubIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
+HOST_PubIP=$(host ${PubIP} | awk '{print $NF}' | sed "s/.$//")
+printf "\n ${PubIP} \t\t${HOST_PubIP}\n\n"
 
 # END

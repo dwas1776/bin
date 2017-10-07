@@ -1,0 +1,6 @@
+QUEUE=$1
+DIR=/var/spool/lpd/pio/@local/custom
+print "\nThe print driver being used for the queue, $QUEUE, is:\n\n       \c"
+grep ":mt::" ${DIR}/${QUEUE}*  | cut -d : -f 5
+print "\n\n"
+

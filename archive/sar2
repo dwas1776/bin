@@ -1,0 +1,28 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:           sar2
+#   DATE:               Sept. 7, 2002
+#   AUTHOR:             David A. Wasmer
+#   SYNTAX:             sar2
+#   AFFECTED SERVERS:
+#   RELATED FILES:      sar
+#   PURPOSE:            Collects sar data
+#			default period is 2 minutes
+#			default count is 30
+#			total sample time is 60 minutes (2*30)
+#
+#   REVISIONS:
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+DATE=$(date +%y%m%d)
+SADC=/usr/lib/sa/sadc
+BINFILE=/admin/metrics/sa/${DATE}.$(hostname).2
+if [ $# = 0 ] ; then
+        $SADC 120 30 $BINFILE
+else
+        $SADC $* $BINFILE
+fi
+
+# END

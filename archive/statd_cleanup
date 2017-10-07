@@ -1,0 +1,14 @@
+#!/usr/bin/ksh
+#
+###########################################################################
+#                                                                         #
+# SCRIPT TO CLEANUP THE NETWORK LOCK MAMNGER FILES ON A SERVER            #
+#                                                                         #
+###########################################################################
+#
+ stopsrc -s rpc.lockd
+ stopsrc -s rpc.statd
+ rm /etc/sm*/*
+ startsrc -s rpc.statd
+ startsrc -s rpc.lockd
+exit 0

@@ -1,0 +1,28 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:           sar5
+#   DATE:               Sept. 7, 2002
+#   AUTHOR:             David A. Wasmer
+#   SYNTAX:             sar5
+#   AFFECTED SERVERS:
+#   RELATED FILES:      sar
+#   PURPOSE:            Collects sar data
+#                       default period is 5 minutes
+#                       default count is 12
+#                       total sample time is 60 minutes (5*12)
+#
+#   REVISIONS:
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+DATE=$(date +%y%m%d)
+SADC=/usr/lib/sa/sadc
+BINFILE=/admin/metrics/sa/${DATE}.$(hostname).5
+if [ $# = 0 ] ; then
+        $SADC 300 12 $BINFILE
+else
+        $SADC $* $BINFILE
+fi
+
+# END

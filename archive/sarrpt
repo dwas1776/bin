@@ -1,0 +1,77 @@
+#!/bin/ksh
+#########|#########|#########|#########|#########|#########|#########|#########|
+#
+#   FILENAME:		
+#   DATE:		, 2002
+#   AUTHOR:		David A. Wasmer
+#   PURPOSE:		
+#
+#   SYNTAX:		
+#
+#   RELATED FILES:	$(hostname):/usr/local/qc/bin/qc	
+#			iesc0001:/usr/local/qc/bin/qc
+#			iesc0001:/etc/qclist
+#
+#   REVISIONS:		
+#
+#
+#########|#########|#########|#########|#########|#########|#########|#########|
+
+function FUNC_HELP
+{
+   print "
+        ${REV}USAGE:                                                               $NORM
+
+        /usr/loca/bin/qc [ -h ][ -e ][ -p ][ -s ]
+                -p   Pages admin
+                -e
+                -s   Checks servers uptime, 6098's alive and mvs alive
+                -h   Help - displays options for this command
+
+        DEFAULT:  check servers uptime and processes \n
+"
+exit 0
+}
+
+
+##########################################
+#      M A I N
+##########################################
+
+#################
+#   GETOPTS
+#################
+while getopts "s:d:h" OPTION; do
+   case $OPTION in
+      o ) SAROPT="$OPTARG"		;;
+      s ) SOURCE="$OPTARG"		;;
+      d ) DESTINATION="$OPTARG"		;;
+      h ) FUNC_HELP ; exit 0		;;
+      * ) FUNC_HELP ; exit 0		;;
+   esac
+done
+shift $(($OPTIND - 1))
+################################################################################
+if [ "$TRACE" = true ]; then
+       set -x
+fi
+
+if [[ -z "$SOURCE" ]]; then
+   FUNC_HELP
+fi
+
+if [[ -z "$DESTINATION" ]]; then
+   DESTINATION=/tmp/${SOURCE}.out
+fi
+
+if [ -n "$SAROUT" ]; then
+   case "$SAROPT" in
+        u ) sar -$SAROPT -f $SOURCE | sed "s/ * /	/g" > $DESTINATION ;;
+        q ) sar -$SAROPT -f $SOURCE | sed "s/ * /	/g" > $DESTINATION ;;
+        * ) USAGE ; exit 0 ;;
+   esac
+else
+        sar -f $SOURCE | sed "s/ * /	/g" > $DESTINATION
+fi
+
+# END
