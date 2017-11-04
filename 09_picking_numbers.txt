@@ -1,0 +1,14 @@
+#!/usr/local/bin/python3
+#
+# User picks 6 numbers
+# Lottery calculates 6 random numbers (between 1 and 20)
+# Then we match the user numbers to the lottery numbers
+# Calulate the winnings based on how many numbers the user matched
+#
+###############################################################################
+
+
+def get_player_numbers():
+    number_csv = input("Enter your 6 numbers, separated by commas:   ")
+    # create a set of integers from user numbers
+    for number in number_cvs
