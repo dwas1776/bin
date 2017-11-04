@@ -1,0 +1,326 @@
+exit 0
+#################################################
+#  INSTALLED   SOFTWARE
+#################################################
+# show OS fix level
+instfix -ik | grep ML
+
+# to check what is missing to get you to the maint level
+oslevel -rl 4330-08
+oslevel -l 4.3.3.0
+  # on older systems use
+  instfix -icqk 4330-08_AIX_ML |grep ":-:"
+
+# to show fully installed maintenance level
+oslevel -r
+
+# show all available filesets on the installation media
+/usr/lib/instl/sm_inst list_filesets -s _all_alvailable -d /mnt/usr/sys/inst.images
+
+
+#################################################
+#  NETWORK   TRICKS
+#################################################
+# to see network configuration and stats
+entstat -d ent1 | more
+
+
+#################################################
+#  VI   TRICKS
+#################################################
+# to see the line #
+Ctrl-G
+
+# Substitution in vi
+:179,279s/^/##/
+
+
+#################################################
+#  SCRIPTING   TRICKS
+#################################################
+# redirect standard out and standard error to bit bucket or file
+ > /dev/null 2>&1
+ > logfile  2>&1
+
+# redirect standard error to bit bucket
+2>/dev/null
+
+# to redirect standard out and standard error of several commands to screen and logfile:
+ {
+   [ command 1 ]
+   [ command 2 ]
+ } 2>&1 | tee $LOGFILE
+
+# sum a column of numbers
+du -sk * | awk '{sum+=$1 ; print sum}' | tail -n 1
+
+# change space characters into newline characters
+tr -s ' ' '\n'
+
+# convert tab characters brought over
+# from Lotus Notes, ^'A, characters to space characters
+tr '\201' ' ' < source_file > newfile
+
+# Example of help function to go with the getops that follows
+function FUNC_HELP
+{
+ print "
+ USAGE:  command   [-h]  [-e argument]  [-l argument]  [-p]
+          -h   Help - displays options for this command
+          -e   sets E_VAR variable equal to argument 
+          -l   sets L_VAR variable equal to argument
+          -p   sets P_OPTION variable flag to true"
+}
+
+# Syntax for the getops script control
+while getopts "he:l:p" OPTION; do
+   case $OPTION in
+      h ) FUNC_HELP ; exit 0   ;;
+      e ) E_VAR=${OPTARG}      ;;
+      l ) L_VAR=${OPTARG}      ;;
+      p ) P_OPTION="true"      ;;
+      * ) FUNC_HELP ; exit 0   ;;
+   esac
+done
+shift $(($OPTIND - 1))
+
+
+#################################################
+#  MISC
+#################################################
+# view boot log:
+alog -ot boot
+
+# to show how much real memory is installed
+lsattr -El sys0 -a realmem
+bootinfo -r
+
+# tar copy from same server
+tar -cvf-  . | rsh <remote host> "cd /peoplesoft75v && tar -xvf -"
+
+# tar copy from remote server
+tar -cf- appserv bin cblbin install sql sqr src | rsh psftdev "cd /peoplesoft7s && tar -xf-"
+rsh <remote node> "(cd /home ; tar cvf - .)" | (cd /home && tar xvf - )
+
+# to run a command against the find command
+  # this removes the found files
+  find /ora_[0-3]*.aud  -ctime +14 -exec rm {} \;
+  # this greps the found files
+  find . -type f -exec grep essf1n7 {} \;
+
+# to create a 1GB file:
+/usr/sbin/lmktemp filename1 1073741824
+  # to create a second 1GB file:
+  cp filename1 filename2
+
+# to create a 2GB file, append the first file to the second file:
+cat filename1 >> filename2
+
+# to create a 3GB file, append the first file to the second file again:
+cat filename1 >> filename2
+
+# To transfer a bogus 300 MB file use
+put "|dd if=/dev/zero bs=32k count=10000" /dev/null
+
+# To show basic configuration information in one command (vs. lscfg, lsdev, lspv, netstat)
+#  (This command is not documented but is a shell script so you can read it)
+prtconf
+
+
+#################################################
+#  PERFORMANCE   MONITORING
+#################################################
+# to view memory (shared memory) info.
+ipcs -m -b |sort -k 7r | more
+
+# to see the top process hogs.
+topas -p5 -n0 -d0
+
+# Monitor the activity at all file system levels
+filemon -o filemon.out -O all ; sleep 60 ; trcstop
+
+# Process table commands
+ps -Ao pid=,ppid=,user=,group=,command=, 
+ps gvww 
+
+# how many AIO servers are currently being used?
+pstat -a | grep aios | wc -l
+
+# Check network errors
+entstat -d ent1
+
+# Check adapter throughput (in/out)
+   ### FTP in to a server with same adapter speed know to be ok.
+ftp> bin
+ftp> put "|dd if=/dev/zero bs=32k count=100" /dev/null
+   ### Next, from the other server, FTP into your server and repeat check 
+ftp> bin
+ftp> put "|dd if=/dev/zero bs=32k count=100" /dev/null
+
+#################################################
+#   HACMP   COMMANDS
+#################################################
+# cluster verification
+/usr/sbin/cluster/diag/clconfig -v '-tr'
+
+# to show cluster resources by node
+/usr/sbin/cluster/utilities/clshowres -n'iessf2n5'
+
+# to show cluster resources by resource group
+/usr/sbin/cluster/utilities/clshowres -g'han' 
+
+# to show topology by node
+/usr/sbin/cluster/utilities/cllsnode
+
+# to show cluster services
+/usr/sbin/cluster/utilities/clshowsrv -a 
+
+
+#################################################
+#   LOGICAL VOLUME COMMANDS
+#################################################
+# to get the actual serial number off an ssa disk:
+lsattr -El hdisk22 -a connwhere_shad|cut -c20-27
+
+# to determine file system space used
+ls -A . | while read name; do du -sk $name; done | sort -nr
+
+# to translate pdisk to hdisk
+for i in $(lsdev -CS1 -cpdisk -sssar -F name); do
+   print "$i: \c"
+   ssaxlate -l $i
+done 
+
+
+# EXAMPLE:  to expand the oracle filesystems on resumix
+  1. break mirror
+  2. create logfile for each Oracle filesystem to improve performance
+  3. assign logfile to fs
+  4. change lv Max PPs
+  5. extend lv size
+  6. expand fs
+  7. create mirror
+  8. syncvg
+lsvg -p oravg
+lslv -m u02 | more
+rmlvcopy u02 1 hdisk13
+mklv -y logu02 -t jfslog oravg 2 hdisk3
+logform /dev/logu02
+chfs -a dev=/dev/u02 -a log=/dev/logu02 /u02
+uumount /u02
+mount /u02
+lsvg -p oravg
+chlv -x 536 u01
+extendlv u02 23 hdisk3
+lsfs -q /u02
+chfs -a size=8765440 /u02
+mklvcopy u02 2 hdisk13
+mklvcopy logu02 2 hdisk13
+syncvg -l u02
+syncvg -l logu02
+
+# To see the LTG max size when creating VG's use
+lquerypv -M <hdisk> 
+
+#################################################
+# ANALYZE CORE FILES AND DUMPS
+#################################################
+# to try to determine cause of core file 
+# (this is not always successful),
+# change to the directory where the core file 
+# is located and then view its binary inerds 
+# as follows:
+lquerypv -h core 6b0 64 
+strings core | grep _=
+strings core | grep LOGNAME
+
+# you could also try running the dbx command
+# against the core file
+dbx /usr/bin/ksh core
+   Type 'help' for help.
+   Core file program (nim_sl) does not match current program (core ignored)
+   reading symbolic information ...warning: no source compiled with -g
+
+   (dbx) where
+   __start() at 0x10000100
+   (dbx) quit
+
+
+# core dump analysis
+sysdumpdev -L
+errpt -aj [identifier # goes here]
+diag
+
+# Here is a Crash command example
+crash /dev/lv00
+Using /unix as the default namelist file.
+> cpu
+Selected cpu number :  1
+> status
+CPU     TID  TSLOT     PID  PSLOT  STOPPED  PROC_NAME
+  0     205      2     204      2       no  wait
+  1     307      3     306      3      yes  wait
+> stat
+        sysname: AIX
+        nodename: essf1n11
+        release: 3
+        version: 4
+        machine: 000154764C00
+        time of crash: Tue May 28 01:28:47 EDT 2002
+        age of system: 1 day, 5 hr., 17 min.
+        xmalloc debug: disabled
+        abend code: 207
+        csa: 0x444eb0
+        exception struct:
+                0x00000000 0x00000000 0x00000000 0x00000000 0x00000000
+
+> trace -m
+Skipping first MST
+
+MST STACK TRACE:
+0x00444eb0 (excpt=00000000:00000000:00000000:00000000:00000000) (intpri=10)
+        IAR:      .internal_iodone_offl+188 (00017024):     lwz   r12,0x54(r1)
+        LR:       .internal_iodone_offl+184 (00017020)
+        00444da0: .iodone_offl+24 (00016e40)
+        00444de0: .i_softmod+1d8 (000152f8)
+        00444e70: flih_603_patch+cc (00021bf8)
+
+0x2ff3b400 (excpt=00000000:00000000:00000000:00000000:00000000) (intpri=11)
+        IAR:      .waitproc+50 (0001ea7c):      mr   r1,r1
+        LR:       .waitproc+a0 (0001eacc)
+        2ff3b388: .procentry+14 (0008df94)
+        2ff3b3c8: .low+0 (00000000)
+
+
+#
+#  TAPE tricks
+#
+#   if you get a tar tape and dont know the blocksize it was written with, do this:
+dd if=/dev/rmt0 of=/tmp/blocksize.out bs=256k count=1
+#   then ls -l /tmp/blocksize   # the byte count of the this file is the blocksize of the tar file.
+-rw-r--r--   1 root     system     10240 Dec 10 13:13 /tmp/blocksize.out
+#   Then set your device blocksize attribute to this size:
+chdev  -l rmt0 -a block_size='10240'
+#   and read in the tape
+tar xvf /dev/rmt0
+
+#
+#################################################
+# Network socket info - to identify a process attached to a socket
+#################################################
+#
+#
+netstat -Aan <port #>
+rmsock  <id> tcpcb
+
+# This is an example of the process
+root@inssvamrd1:/ # netstat -Aan | egrep 6010
+f1000089c04deb58 tcp4       0      0  127.0.0.1.6010     *.*                LISTEN
+root@inssvamrd1:/ # rmsock f1000089c04deb58 tcpcb
+The socket 0xc04de800 is being held by proccess 368824 (sshd).
+
+####################################################
+# LPAR INFO  To remove an adapter from the server config. 
+####################################################
+lsdev -Cl cd0 -F parent   # keep doing this until you get a pci slot
+rmdev -dl pci<#> -R
