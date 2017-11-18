@@ -14,6 +14,8 @@
 #   20171006 DW creation date
 #
 #####################################################################
+#set -x
+#set +x
 
 NETWORKS=$(networksetup -listnetworkserviceorder | grep 'Hardware Port')
 printf "\nPRIVATE IPs"

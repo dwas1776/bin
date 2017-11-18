@@ -1,3 +1,17 @@
+#!/bin/ksh
+# set -x
+# set +x
+#####################################################################
+# NAME:
+#   errpt_today.ksh
+#
+# SYNOPSIS:
+#   show today's errors on aix server
+#
+# REVISIONS:
+#
+#
+#####################################################################
 BOLD=$(tput bold)
 REV=$(tput rev)
 NORMAL=$(tput sgr0)

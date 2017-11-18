@@ -1,4 +1,6 @@
 #!/bin/bash
+# set -x
+# set +x
 #####################################################################
 # NAME:
 #   ShowHideDotFiles -- Finder: show/hide dot files

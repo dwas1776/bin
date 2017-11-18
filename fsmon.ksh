@@ -23,6 +23,8 @@
 #
 #
 #########|#########|#########|#########|#########|#########|#########|#########|
+#set -x
+#set +x
 while getopts "n:w:m:c:p:" OPTION; do
       case $OPTION in
            n ) FS_NAME="$OPTARG"             ;;

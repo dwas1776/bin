@@ -1,10 +1,14 @@
 #!/bin/ksh
+#####################################################################
 # tar a source host/file, cp to destination host, and untar it
 #
 # Syntax:  /userdata/b45/reports/bin/archive dhost:ddir shost:sdir filepat
 # Example: archive rs0e01:/catia_ops/ecgl/rptdata/lsstat /tmp "lsstat_*"
 #                        $1                               $2    $3
 #
+#####################################################################
+# set -x
+# set +x
 
 function Help {
    print "Syntax:  $1 <-rm> dhost:ddir                             shost:sdir \"filepat\""

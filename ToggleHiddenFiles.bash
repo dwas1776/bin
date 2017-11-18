@@ -1,4 +1,6 @@
 #!/bin/bash
+# set -x
+# set +x
 #####################################################################
 # NAME:
 #   ToogleHiddenFiles -- Finder: toggle curren show/hide dot files

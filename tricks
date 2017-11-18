@@ -1,7 +1,13 @@
 exit 0
+
+#################################################
+# sandwich suspect bad code for debug
+#################################################
+set -x
+set +x
+
 #################################################
 #  INSTALLED   SOFTWARE
-#################################################
 # show OS fix level
 instfix -ik | grep ML
 
@@ -67,7 +73,7 @@ function FUNC_HELP
  print "
  USAGE:  command   [-h]  [-e argument]  [-l argument]  [-p]
           -h   Help - displays options for this command
-          -e   sets E_VAR variable equal to argument 
+          -e   sets E_VAR variable equal to argument
           -l   sets L_VAR variable equal to argument
           -p   sets P_OPTION variable flag to true"
 }
@@ -140,8 +146,8 @@ topas -p5 -n0 -d0
 filemon -o filemon.out -O all ; sleep 60 ; trcstop
 
 # Process table commands
-ps -Ao pid=,ppid=,user=,group=,command=, 
-ps gvww 
+ps -Ao pid=,ppid=,user=,group=,command=,
+ps gvww
 
 # how many AIO servers are currently being used?
 pstat -a | grep aios | wc -l
@@ -153,7 +159,7 @@ entstat -d ent1
    ### FTP in to a server with same adapter speed know to be ok.
 ftp> bin
 ftp> put "|dd if=/dev/zero bs=32k count=100" /dev/null
-   ### Next, from the other server, FTP into your server and repeat check 
+   ### Next, from the other server, FTP into your server and repeat check
 ftp> bin
 ftp> put "|dd if=/dev/zero bs=32k count=100" /dev/null
 
@@ -167,13 +173,13 @@ ftp> put "|dd if=/dev/zero bs=32k count=100" /dev/null
 /usr/sbin/cluster/utilities/clshowres -n'iessf2n5'
 
 # to show cluster resources by resource group
-/usr/sbin/cluster/utilities/clshowres -g'han' 
+/usr/sbin/cluster/utilities/clshowres -g'han'
 
 # to show topology by node
 /usr/sbin/cluster/utilities/cllsnode
 
 # to show cluster services
-/usr/sbin/cluster/utilities/clshowsrv -a 
+/usr/sbin/cluster/utilities/clshowsrv -a
 
 
 #################################################
@@ -189,7 +195,7 @@ ls -A . | while read name; do du -sk $name; done | sort -nr
 for i in $(lsdev -CS1 -cpdisk -sssar -F name); do
    print "$i: \c"
    ssaxlate -l $i
-done 
+done
 
 
 # EXAMPLE:  to expand the oracle filesystems on resumix
@@ -220,23 +226,23 @@ syncvg -l u02
 syncvg -l logu02
 
 # To see the LTG max size when creating VG's use
-lquerypv -M <hdisk> 
+lquerypv -M <hdisk>
 
 #################################################
 # ANALYZE CORE FILES AND DUMPS
 #################################################
-# to try to determine cause of core file 
+# to try to determine cause of core file
 # (this is not always successful),
-# change to the directory where the core file 
-# is located and then view its binary inerds 
+# change to the directory where the core file
+# is located and then view its binary inerds
 # as follows:
-lquerypv -h core 6b0 64 
+lquerypv -h core 6b0 64
 strings core | grep _=
 strings core | grep LOGNAME
 
 # you could also try running the dbx command
 # against the core file
-dbx /usr/bin/ksh core
+dbx /bin/ksh core
    Type 'help' for help.
    Core file program (nim_sl) does not match current program (core ignored)
    reading symbolic information ...warning: no source compiled with -g
@@ -320,7 +326,9 @@ root@inssvamrd1:/ # rmsock f1000089c04deb58 tcpcb
 The socket 0xc04de800 is being held by proccess 368824 (sshd).
 
 ####################################################
-# LPAR INFO  To remove an adapter from the server config. 
+# LPAR INFO  To remove an adapter from the server config.
 ####################################################
 lsdev -Cl cd0 -F parent   # keep doing this until you get a pci slot
 rmdev -dl pci<#> -R
+
+# END

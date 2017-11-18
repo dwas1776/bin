@@ -25,6 +25,8 @@
 #  2017/09/28  DW  creation date
 #
 #####################################################################
+#set -x
+#set +x
 
 # VARIABLES
 LOGFILE=/tmp/myips.out

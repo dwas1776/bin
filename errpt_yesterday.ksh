@@ -1,3 +1,15 @@
+#!/user/bin/ksh
+# set -x
+# set +x
+#####################################################################
+# NAME:
+#   errpt_yesterday.ksh
+#
+# SYNOPSIS:
+#
+# REVISIONS:
+#
+#####################################################################
 BOLD=$(tput bold)
 REV=$(tput rev)
 NORMAL=$(tput sgr0)
